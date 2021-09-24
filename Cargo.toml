@@ -1,0 +1,21 @@
+[package]
+name = "uvdata"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "uvdata"
+test = true
+bench = false
+
+[dependencies]
+num = "0.4"
+chrono = "0.4"
+ndarray = { version = "0.15.3", features = ["approx"]}
+hdf5 = { git = "https://github.com/aldanor/hdf5-rust.git", features = ["lzf"]}
+
+
+[dev-dependencies]
+approx = "0.5"
