@@ -5,7 +5,8 @@ use num::Complex;
 use std::path::Path;
 
 use super::base::{
-    ArrayMetaData, BltOrder, BltOrders, EqConvention, Orientation, PhaseType, UVMeta, VisUnit,
+    ArrayMetaData, BltOrder, BltOrders, Catalog, CatalogVal, EqConvention, Orientation, PhaseType,
+    UVMeta, VisUnit,
 };
 use super::utils;
 
@@ -200,7 +201,7 @@ impl UVH5 {
             .as_str()
         {
             "divide" => EqConvention::Divide,
-            "Multiply" => EqConvention::Multiply,
+            "multiply" => EqConvention::Multiply,
             _ => EqConvention::Unknown,
         };
 
@@ -223,6 +224,10 @@ impl UVH5 {
         let npols: u8 = read_scalar::<u8>(&header, "Npols".to_string())?.unwrap();
         let ntimes: u32 = read_scalar::<u32>(&header, "Ntimes".to_string())?.unwrap();
         let nfreqs: u32 = read_scalar::<u32>(&header, "Nfreqs".to_string())?.unwrap();
+        let nphases: u32 = match read_scalar::<u32>(&header, "Nphases".to_string())? {
+            Some(int) => int,
+            None => 1,
+        };
 
         let meta = UVMeta {
             nbls,
@@ -231,6 +236,7 @@ impl UVH5 {
             npols,
             ntimes,
             nfreqs,
+            nphases,
             nants_data,
             blt_order,
             vis_units,
@@ -296,7 +302,45 @@ impl UVH5 {
             header.dataset("antenna_numbers")?.read::<u32, Ix1>()?;
         let antenna_positions: Array<f64, Ix2> =
             header.dataset("antenna_positions")?.read::<f64, Ix2>()?;
+        let phase_center_catalog = match header.link_exists("phase_center_catalog") {
+            true => {
+                let phase_group: hdf5::Group = header.group("phase_center_catalog")?;
+                let phase_names: Vec<String> = phase_group.member_names()?;
+                let mut cat: Catalog = Catalog::new();
+                for name in phase_names {
+                    let json_str = phase_group
+                        .dataset(&name.as_str())?
+                        .read_scalar::<FixedAscii<20_000>>()?;
 
+                    let cat_val: CatalogVal = match serde_json::from_str(json_str.as_str()) {
+                        Ok(string) => string,
+                        Err(err) => return Err(format!("Json Err {}", err).into()),
+                    };
+                    cat.insert(name.into(), cat_val);
+                }
+                cat
+            }
+            false => {
+                let mut cat = Catalog::new();
+                cat.insert(
+                    "zenith".to_string(),
+                    CatalogVal {
+                        cat_id: 0,
+                        cat_type: "unphased".to_string(),
+                        cat_lon: Some(0.0),
+                        cat_lat: Some(std::f64::consts::PI / 2.),
+                        cat_frame: Some("altaz".to_string()),
+                        cat_epoch: None,
+                        cat_times: None,
+                        cat_pm_ra: None,
+                        cat_pm_dec: None,
+                        cat_dist: None,
+                        cat_vrad: None,
+                    },
+                );
+                cat
+            }
+        };
         let meta_arrays = ArrayMetaData {
             spw_array,
             uvw_array,
@@ -314,6 +358,7 @@ impl UVH5 {
             antenna_positions,
             eq_coeffs,
             antenna_diameters,
+            phase_center_catalog,
         };
         // optional data read
         let (data_array, nsample_array, flag_array) = match read_data {

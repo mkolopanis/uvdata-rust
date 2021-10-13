@@ -11,6 +11,7 @@ fn init_metadata_false() {
         nfreqs: 12,
         npols: 4,
         nspws: 1,
+        nphases: 1,
         nants_data: 5,
         nants_telescope: 12,
         blt_order: BltOrder {
@@ -65,6 +66,7 @@ fn from_uvmeta_bool() {
         nfreqs: 12,
         npols: 4,
         nspws: 1,
+        nphases: 1,
         nants_data: 5,
         nants_telescope: 12,
         blt_order: BltOrder {
@@ -119,6 +121,7 @@ fn from_uvmeta() {
         nfreqs: 12,
         npols: 4,
         nspws: 1,
+        nphases: 1,
         nants_data: 5,
         nants_telescope: 12,
         blt_order: BltOrder {
@@ -155,6 +158,7 @@ fn init_metadata_false_f32() {
         nfreqs: 12,
         npols: 4,
         nspws: 1,
+        nphases: 1,
         nants_data: 5,
         nants_telescope: 12,
         blt_order: BltOrder {
@@ -209,6 +213,7 @@ fn init_metadata_true() {
         nfreqs: 12,
         npols: 4,
         nspws: 1,
+        nphases: 1,
         nants_data: 5,
         nants_telescope: 12,
         blt_order: BltOrder {

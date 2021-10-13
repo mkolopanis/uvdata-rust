@@ -1,4 +1,25 @@
 use ndarray::{Array, Ix1, Ix2};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+// TODO: make and enum of the different catalog types
+// and catalog structs themselves probably too
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct CatalogVal {
+    pub cat_id: u32,
+    pub cat_type: String,
+    pub cat_lon: Option<f64>,
+    pub cat_lat: Option<f64>,
+    pub cat_frame: Option<String>,
+    pub cat_epoch: Option<String>,
+    pub cat_times: Option<Array<f64, Ix1>>,
+    pub cat_pm_ra: Option<f64>,
+    pub cat_pm_dec: Option<f64>,
+    pub cat_dist: Option<Array<f64, Ix1>>,
+    pub cat_vrad: Option<Array<f64, Ix1>>,
+}
+
+pub type Catalog = HashMap<String, CatalogVal>;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum VisUnit {
@@ -11,6 +32,7 @@ pub enum VisUnit {
 pub enum PhaseType {
     Drift,
     Phased,
+    Multi,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -51,6 +73,7 @@ pub struct UVMeta {
     pub npols: u8,
     pub ntimes: u32,
     pub nfreqs: u32,
+    pub nphases: u32,
     pub nants_data: u32,
     pub blt_order: BltOrder,
     pub vis_units: VisUnit,
@@ -81,6 +104,7 @@ impl UVMeta {
             nspws: 0,
             ntimes: 0,
             nfreqs: 0,
+            nphases: 1,
             nants_data: 0,
             nants_telescope: 0,
             blt_order: BltOrder {
@@ -123,10 +147,30 @@ pub struct ArrayMetaData {
     pub antenna_positions: Array<f64, Ix2>,
     pub eq_coeffs: Option<Array<f32, Ix2>>,
     pub antenna_diameters: Option<Array<f32, Ix1>>,
+    pub phase_center_catalog: Catalog,
 }
 
 impl ArrayMetaData {
     pub fn new(meta: &UVMeta) -> ArrayMetaData {
+        let mut cat = Catalog::new();
+        for phase in 0..meta.nphases {
+            cat.insert(
+                format!("zenith_{}", phase).to_string(),
+                CatalogVal {
+                    cat_id: phase,
+                    cat_type: "unphased".to_string(),
+                    cat_lon: Some(0.0),
+                    cat_lat: Some(std::f64::consts::PI / 2.),
+                    cat_frame: Some("altaz".to_string()),
+                    cat_epoch: None,
+                    cat_times: None,
+                    cat_pm_ra: None,
+                    cat_pm_dec: None,
+                    cat_dist: None,
+                    cat_vrad: None,
+                },
+            );
+        }
         ArrayMetaData {
             spw_array: Array::<u32, Ix1>::zeros(meta.nspws as usize),
             uvw_array: Array::<f64, Ix2>::zeros((meta.nblts as usize, 3)),
@@ -144,6 +188,7 @@ impl ArrayMetaData {
             antenna_positions: Array::<f64, Ix2>::zeros((meta.nants_telescope as usize, 3)),
             eq_coeffs: None,
             antenna_diameters: None,
+            phase_center_catalog: cat,
         }
     }
 }

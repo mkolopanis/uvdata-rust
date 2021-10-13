@@ -13,9 +13,10 @@ bench = false
 [dependencies]
 num = "0.4"
 chrono = "0.4"
-ndarray = { version = "0.15.3", features = ["approx"]}
+ndarray = { version = "0.15.3", features = ["approx", "serde"]}
 hdf5 = { git = "https://github.com/aldanor/hdf5-rust.git", features = ["lzf"]}
-
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [dev-dependencies]
 approx = "0.5"
