@@ -5,8 +5,8 @@ use num::Complex;
 use std::path::Path;
 
 use super::base::{
-    ArrayMetaData, BltOrder, BltOrders, Catalog, CatalogVal, EqConvention, Orientation, PhaseType,
-    UVMeta, VisUnit,
+    ArrayMetaData, BltOrder, BltOrders, CatTypes, Catalog, EqConvention, Orientation, PhaseType,
+    SiderealVal, UVMeta, UnphasedVal, VisUnit,
 };
 use super::utils;
 
@@ -214,6 +214,12 @@ impl UVH5 {
             _ => PhaseType::Drift,
         };
 
+        let object_name: String =
+            match read_scalar::<FixedAscii<200>>(&header, "object_name".to_string()) {
+                Ok(name) => name.unwrap_or(unknown).to_lowercase().to_string(),
+                Err(_) => "unknown".to_string(),
+            };
+
         let nants_data: u32 = read_scalar::<u32>(&header, "Nants_data".to_string())?.unwrap();
 
         let nants_telescope: u32 =
@@ -312,8 +318,9 @@ impl UVH5 {
                         .dataset(&name.as_str())?
                         .read_scalar::<FixedAscii<20_000>>()?;
 
-                    let cat_val: CatalogVal = match serde_json::from_str(json_str.as_str()) {
-                        Ok(string) => string,
+                    let cat_val: CatTypes = match serde_json::from_str(json_str.as_str()) {
+                        Ok(CatTypes::Unphased(val)) => CatTypes::Unphased(val),
+                        Ok(CatTypes::Sidereal(val)) => CatTypes::Sidereal(val),
                         Err(err) => return Err(format!("Json Err {}", err).into()),
                     };
                     cat.insert(name.into(), cat_val);
@@ -321,23 +328,57 @@ impl UVH5 {
                 cat
             }
             false => {
+                // if not multi-phased deal with each phase and
+                // add into catalog
                 let mut cat = Catalog::new();
-                cat.insert(
-                    "zenith".to_string(),
-                    CatalogVal {
-                        cat_id: 0,
-                        cat_type: "unphased".to_string(),
-                        cat_lon: Some(0.0),
-                        cat_lat: Some(std::f64::consts::PI / 2.),
-                        cat_frame: Some("altaz".to_string()),
-                        cat_epoch: None,
-                        cat_times: None,
-                        cat_pm_ra: None,
-                        cat_pm_dec: None,
-                        cat_dist: None,
-                        cat_vrad: None,
-                    },
-                );
+                match phase_type {
+                    PhaseType::Drift => {
+                        cat.insert(
+                            "zenith".to_string(),
+                            CatTypes::Unphased(UnphasedVal {
+                                cat_id: 0,
+                                cat_type: "unphased".to_string(),
+                            }),
+                        );
+                    }
+                    PhaseType::Phased => {
+                        let cat_frame: String = match read_scalar::<FixedAscii<200>>(
+                            &header,
+                            "phase_center_frame".to_string(),
+                        ) {
+                            Ok(name) => name.unwrap_or(unknown).to_lowercase().to_string(),
+                            Err(_) => "unknown".to_string(),
+                        };
+                        cat.insert(
+                            object_name,
+                            CatTypes::Sidereal(SiderealVal {
+                                cat_id: 0,
+                                cat_type: "sidereal".to_string(),
+                                cat_lon: read_scalar::<f64>(
+                                    &header,
+                                    "phase_center_ra".to_string(),
+                                )?
+                                .unwrap(),
+                                cat_lat: read_scalar::<f64>(
+                                    &header,
+                                    "phase_center_dec".to_string(),
+                                )?
+                                .unwrap(),
+                                cat_frame,
+                                cat_epoch: read_scalar::<f64>(
+                                    &header,
+                                    "phase_center_epoch".to_string(),
+                                )?
+                                .unwrap(),
+                                cat_pm_ra: None,
+                                cat_pm_dec: None,
+                                cat_dist: None,
+                                cat_vrad: None,
+                            }),
+                        );
+                    }
+                    _ => (),
+                }
                 cat
             }
         };

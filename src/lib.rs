@@ -13,8 +13,8 @@ mod uvh5;
 pub use self::uvh5::UVH5;
 
 pub use self::base::{
-    ArrayMetaData, BltOrder, BltOrders, Catalog, CatalogVal, EqConvention, Orientation, PhaseType,
-    UVMeta, VisUnit,
+    ArrayMetaData, BltOrder, BltOrders, CatTypes, Catalog, EqConvention, Orientation, PhaseType,
+    SiderealVal, UVMeta, UnphasedVal, VisUnit,
 };
 pub use self::utils::{antnums_to_baseline, latlonalt_from_xyz, xyz_from_latlonalt};
 

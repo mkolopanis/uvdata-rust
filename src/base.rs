@@ -5,21 +5,33 @@ use std::collections::HashMap;
 // TODO: make and enum of the different catalog types
 // and catalog structs themselves probably too
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct CatalogVal {
+pub struct UnphasedVal {
     pub cat_id: u32,
     pub cat_type: String,
-    pub cat_lon: Option<f64>,
-    pub cat_lat: Option<f64>,
-    pub cat_frame: Option<String>,
-    pub cat_epoch: Option<String>,
-    pub cat_times: Option<Array<f64, Ix1>>,
-    pub cat_pm_ra: Option<f64>,
-    pub cat_pm_dec: Option<f64>,
-    pub cat_dist: Option<Array<f64, Ix1>>,
-    pub cat_vrad: Option<Array<f64, Ix1>>,
 }
 
-pub type Catalog = HashMap<String, CatalogVal>;
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct SiderealVal {
+    pub cat_id: u32,
+    pub cat_type: String,
+    pub cat_lon: f64,
+    pub cat_lat: f64,
+    pub cat_frame: String,
+    pub cat_epoch: f64,
+    pub cat_pm_ra: Option<f64>,
+    pub cat_pm_dec: Option<f64>,
+    pub cat_dist: Option<f64>,
+    pub cat_vrad: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum CatTypes {
+    Unphased(UnphasedVal),
+    Sidereal(SiderealVal),
+}
+
+pub type Catalog = HashMap<String, CatTypes>;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum VisUnit {
@@ -156,19 +168,10 @@ impl ArrayMetaData {
         for phase in 0..meta.nphases {
             cat.insert(
                 format!("zenith_{}", phase).to_string(),
-                CatalogVal {
+                CatTypes::Unphased(UnphasedVal {
                     cat_id: phase,
                     cat_type: "unphased".to_string(),
-                    cat_lon: Some(0.0),
-                    cat_lat: Some(std::f64::consts::PI / 2.),
-                    cat_frame: Some("altaz".to_string()),
-                    cat_epoch: None,
-                    cat_times: None,
-                    cat_pm_ra: None,
-                    cat_pm_dec: None,
-                    cat_dist: None,
-                    cat_vrad: None,
-                },
+                }),
             );
         }
         ArrayMetaData {
