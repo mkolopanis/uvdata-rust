@@ -26,6 +26,8 @@ jobs:
       - name: Install Rust (${{matrix.rust}})
         uses: actions-rs/toolchain@v1
         with: {profile: minimal, toolchain: '${{matrix.rust}}', override: true, components: 'rustfmt, clippy'}
+      - name: Install HDF5
+        run: sudo apt-get install libhdf5-dev
       - name: Run cargo ${{matrix.command}}
         uses: actions-rs/cargo@v1
         with:
@@ -35,6 +37,9 @@ jobs:
   test:
     name: test
     runs-on: ${{matrix.os}}-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
@@ -50,5 +55,15 @@ jobs:
       - name: Install Rust (${{matrix.rust}})
         uses: actions-rs/toolchain@v1
         with: {toolchain: '${{matrix.rust}}', profile: minimal, override: true}
+      - name: Install conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: false
+          miniconda-version: "latest"
+          auto-activate-base: true
+          activate-environment: ""
+      - name: Install HDF5
+        run: |
+          conda install -yq hdf5
       - name: Build and test crate
         run: cargo test
