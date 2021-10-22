@@ -50,5 +50,5 @@ jobs:
       - name: Install Rust (${{matrix.rust}})
         uses: actions-rs/toolchain@v1
         with: {toolchain: '${{matrix.rust}}', profile: minimal, override: true}
-      - name: Build and test all crates
+      - name: Build and test crate
         run: cargo test
