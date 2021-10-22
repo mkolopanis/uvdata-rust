@@ -247,7 +247,10 @@ fn test_read_files() {
     let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data");
     for fname in data_dir.read_dir().expect("No data found") {
         if let Ok(fname) = fname {
-            let _ = UVData::<f64, f32>::read_uvh5(fname.path(), true);
+            match UVData::<f64, f32>::read_uvh5(fname.path(), true) {
+                Ok(_) => assert!(true),
+                Err(_) => assert!(false),
+            };
         }
     }
 }
