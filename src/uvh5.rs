@@ -308,82 +308,86 @@ impl UVH5 {
             header.dataset("antenna_numbers")?.read::<u32, Ix1>()?;
         let antenna_positions: Array<f64, Ix2> =
             header.dataset("antenna_positions")?.read::<f64, Ix2>()?;
-        let phase_center_catalog = match header.link_exists("phase_center_catalog") {
-            true => {
-                let phase_group: hdf5::Group = header.group("phase_center_catalog")?;
-                let phase_names: Vec<String> = phase_group.member_names()?;
-                let mut cat: Catalog = Catalog::new();
-                for name in phase_names {
-                    let json_str = phase_group
-                        .dataset(&name.as_str())?
-                        .read_scalar::<FixedAscii<20_000>>()?;
+        let (phase_center_catalog, phase_center_id_array) =
+            match header.link_exists("phase_center_catalog") {
+                true => {
+                    let phase_group: hdf5::Group = header.group("phase_center_catalog")?;
+                    let phase_names: Vec<String> = phase_group.member_names()?;
+                    let mut cat: Catalog = Catalog::new();
+                    for name in phase_names {
+                        let json_str = phase_group
+                            .dataset(&name.as_str())?
+                            .read_scalar::<FixedAscii<20_000>>()?;
 
-                    let cat_val: CatTypes = match serde_json::from_str(json_str.as_str()) {
-                        Ok(CatTypes::Unphased(val)) => CatTypes::Unphased(val),
-                        Ok(CatTypes::Sidereal(val)) => CatTypes::Sidereal(val),
-                        Ok(CatTypes::Ephem(val)) => CatTypes::Ephem(val),
-                        Err(err) => return Err(format!("Json Err {}", err).into()),
-                    };
-                    cat.insert(name.into(), cat_val);
-                }
-                cat
-            }
-            false => {
-                // if not multi-phased deal with each phase and
-                // add into catalog
-                let mut cat = Catalog::new();
-                match phase_type {
-                    PhaseType::Drift => {
-                        cat.insert(
-                            "zenith".to_string(),
-                            CatTypes::Unphased(UnphasedVal {
-                                cat_id: 0,
-                                cat_type: "unphased".to_string(),
-                            }),
-                        );
-                    }
-                    PhaseType::Phased => {
-                        let cat_frame: String = match read_scalar::<FixedAscii<200>>(
-                            &header,
-                            "phase_center_frame".to_string(),
-                        ) {
-                            Ok(name) => name.unwrap_or(unknown).to_lowercase().to_string(),
-                            Err(_) => "unknown".to_string(),
+                        let cat_val: CatTypes = match serde_json::from_str(json_str.as_str()) {
+                            Ok(CatTypes::Unphased(val)) => CatTypes::Unphased(val),
+                            Ok(CatTypes::Sidereal(val)) => CatTypes::Sidereal(val),
+                            Ok(CatTypes::Ephem(val)) => CatTypes::Ephem(val),
+                            Err(err) => return Err(format!("Json Err {}", err).into()),
                         };
-                        cat.insert(
-                            object_name,
-                            CatTypes::Sidereal(SiderealVal {
-                                cat_id: 0,
-                                cat_type: "sidereal".to_string(),
-                                cat_lon: read_scalar::<f64>(
-                                    &header,
-                                    "phase_center_ra".to_string(),
-                                )?
-                                .unwrap(),
-                                cat_lat: read_scalar::<f64>(
-                                    &header,
-                                    "phase_center_dec".to_string(),
-                                )?
-                                .unwrap(),
-                                cat_frame,
-                                cat_epoch: read_scalar::<f64>(
-                                    &header,
-                                    "phase_center_epoch".to_string(),
-                                )?
-                                .unwrap(),
-                                cat_pm_ra: None,
-                                cat_pm_dec: None,
-                                cat_dist: None,
-                                cat_vrad: None,
-                                info_source: Some("UVData".to_string()),
-                            }),
-                        );
+                        cat.insert(name.into(), cat_val);
                     }
-                    _ => (),
+                    let id_array = header
+                        .dataset("phase_center_id_array")?
+                        .read::<u32, Ix1>()?;
+                    (cat, id_array)
                 }
-                cat
-            }
-        };
+                false => {
+                    // if not multi-phased deal with each phase and
+                    // add into catalog
+                    let mut cat = Catalog::new();
+                    match phase_type {
+                        PhaseType::Drift => {
+                            cat.insert(
+                                "zenith".to_string(),
+                                CatTypes::Unphased(UnphasedVal {
+                                    cat_id: 0,
+                                    cat_type: "unphased".to_string(),
+                                }),
+                            );
+                        }
+                        PhaseType::Phased => {
+                            let cat_frame: String = match read_scalar::<FixedAscii<200>>(
+                                &header,
+                                "phase_center_frame".to_string(),
+                            ) {
+                                Ok(name) => name.unwrap_or(unknown).to_lowercase().to_string(),
+                                Err(_) => "unknown".to_string(),
+                            };
+                            cat.insert(
+                                object_name,
+                                CatTypes::Sidereal(SiderealVal {
+                                    cat_id: 0,
+                                    cat_type: "sidereal".to_string(),
+                                    cat_lon: read_scalar::<f64>(
+                                        &header,
+                                        "phase_center_ra".to_string(),
+                                    )?
+                                    .unwrap(),
+                                    cat_lat: read_scalar::<f64>(
+                                        &header,
+                                        "phase_center_dec".to_string(),
+                                    )?
+                                    .unwrap(),
+                                    cat_frame,
+                                    cat_epoch: read_scalar::<f64>(
+                                        &header,
+                                        "phase_center_epoch".to_string(),
+                                    )?
+                                    .unwrap(),
+                                    cat_pm_ra: None,
+                                    cat_pm_dec: None,
+                                    cat_dist: None,
+                                    cat_vrad: None,
+                                    info_source: Some("UVData".to_string()),
+                                }),
+                            );
+                        }
+                        _ => (),
+                    }
+                    (cat, Array::<u32, Ix1>::zeros(meta.nblts as usize))
+                }
+            };
         let meta_arrays = ArrayMetaData {
             spw_array,
             uvw_array,
@@ -402,6 +406,7 @@ impl UVH5 {
             eq_coeffs,
             antenna_diameters,
             phase_center_catalog,
+            phase_center_id_array,
         };
         // optional data read
         let (data_array, nsample_array, flag_array) = match read_data {

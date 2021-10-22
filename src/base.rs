@@ -175,6 +175,7 @@ pub struct ArrayMetaData {
     pub eq_coeffs: Option<Array<f32, Ix2>>,
     pub antenna_diameters: Option<Array<f32, Ix1>>,
     pub phase_center_catalog: Catalog,
+    pub phase_center_id_array: Array<u32, Ix1>,
 }
 
 impl ArrayMetaData {
@@ -207,6 +208,7 @@ impl ArrayMetaData {
             eq_coeffs: None,
             antenna_diameters: None,
             phase_center_catalog: cat,
+            phase_center_id_array: Array::<u32, Ix1>::zeros(meta.nblts as usize),
         }
     }
 }
