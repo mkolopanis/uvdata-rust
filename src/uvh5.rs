@@ -447,7 +447,7 @@ impl UVH5 {
             }
             false => (None, None, None),
         };
-        h5file.close();
+        h5file.close()?;
         let uvh5 = UVH5 {
             meta,
             meta_arrays,
