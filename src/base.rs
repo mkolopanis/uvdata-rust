@@ -22,6 +22,20 @@ pub struct SiderealVal {
     pub cat_pm_dec: Option<f64>,
     pub cat_dist: Option<f64>,
     pub cat_vrad: Option<f64>,
+    pub info_source: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct EphemVal {
+    pub cat_id: u32,
+    pub cat_type: String,
+    pub cat_lon: Array<f64, Ix1>,
+    pub cat_lat: Array<f64, Ix1>,
+    pub cat_frame: String,
+    pub cat_epoch: f64,
+    pub cat_dist: Option<Array<f64, Ix1>>,
+    pub cat_vrad: Option<Array<f64, Ix1>>,
+    pub info_source: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -29,6 +43,7 @@ pub struct SiderealVal {
 pub enum CatTypes {
     Unphased(UnphasedVal),
     Sidereal(SiderealVal),
+    Ephem(EphemVal),
 }
 
 pub type Catalog = HashMap<String, CatTypes>;

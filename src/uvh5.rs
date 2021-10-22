@@ -321,6 +321,7 @@ impl UVH5 {
                     let cat_val: CatTypes = match serde_json::from_str(json_str.as_str()) {
                         Ok(CatTypes::Unphased(val)) => CatTypes::Unphased(val),
                         Ok(CatTypes::Sidereal(val)) => CatTypes::Sidereal(val),
+                        Ok(CatTypes::Ephem(val)) => CatTypes::Ephem(val),
                         Err(err) => return Err(format!("Json Err {}", err).into()),
                     };
                     cat.insert(name.into(), cat_val);
@@ -374,6 +375,7 @@ impl UVH5 {
                                 cat_pm_dec: None,
                                 cat_dist: None,
                                 cat_vrad: None,
+                                info_source: Some("UVData".to_string()),
                             }),
                         );
                     }
