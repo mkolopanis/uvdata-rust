@@ -45,8 +45,7 @@ jobs:
       matrix:
         include:
           - {os: ubuntu, rust: stable}
-          - {os: windows, rust: stable-msvc}
-          - {os: windows, rust: stable-gnu}
+          - {os: windows, rust: stable}
           - {os: macos, rust: stable}
     steps:
       - name: Checkout repository
@@ -69,4 +68,5 @@ jobs:
         run: |
           export HDF5_DIR="$CONDA_PREFIX"
           [ "${{runner.os}}" != "Windows" ] && export RUSTFLAGS="-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib"
+          cargo build
           cargo test -vv
