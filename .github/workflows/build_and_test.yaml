@@ -68,5 +68,6 @@ jobs:
         run: |
           export HDF5_DIR="$CONDA_PREFIX"
           [ "${{runner.os}}" != "Windows" ] && export RUSTFLAGS="-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib"
-          cargo build
-          cargo test -vv
+          cargo build --tests
+      - name: Test
+        run: cargo test -v
