@@ -1,5 +1,6 @@
 use ndarray::Array3;
 use num::Complex;
+use std::path::Path;
 use uvdata::*;
 
 #[test]
@@ -239,4 +240,14 @@ fn init_metadata_true() {
     assert!(uvd.data_array.is_none());
     assert!(uvd.nsample_array.is_none());
     assert!(uvd.flag_array.is_none());
+}
+
+#[test]
+fn test_read_files() {
+    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data");
+    for fname in data_dir.read_dir().expect("No data found") {
+        if let Ok(fname) = fname {
+            let _ = UVData::<f64, f32>::read_uvh5(fname.path(), true);
+        }
+    }
 }
