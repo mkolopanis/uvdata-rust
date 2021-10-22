@@ -1,0 +1,54 @@
+name: Rust CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # run once a week to check
+    - cron:  "0 0 * * 0"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {command: fmt, rust: nightly}
+          - {command: clippy, rust: stable}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install Rust (${{matrix.rust}})
+        uses: actions-rs/toolchain@v1
+        with: {profile: minimal, toolchain: '${{matrix.rust}}', override: true, components: 'rustfmt, clippy'}
+      - name: Run cargo ${{matrix.command}}
+        uses: actions-rs/cargo@v1
+        with:
+          command: ${{matrix.command}}
+          args: "${{matrix.command == 'fmt' && '--all -- --check' || '-- -D warnings'}}"
+
+  test:
+    name: test
+    runs-on: ${{matrix.os}}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu, rust: stable}
+          - {os: windows, rust: stable-msvc}
+          - {os: windows, rust: stable-gnu}
+          - {os: macos, rust: stable}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with: {submodules: true}
+      - name: Install Rust (${{matrix.rust}})
+        uses: actions-rs/toolchain@v1
+        with: {toolchain: '${{matrix.rust}}', profile: minimal, override: true}
+      - name: Build and test all crates
+        run: cargo test
