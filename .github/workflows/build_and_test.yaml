@@ -66,4 +66,7 @@ jobs:
         run: |
           conda install -yq hdf5
       - name: Build and test crate
-        run: cargo test
+        run: |
+          export HDF5_DIR="$CONDA_PREFIX"
+          [ "${{runner.os}}" != "Windows" ] && export RUSTFLAGS="-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib"
+          cargo test -vv
