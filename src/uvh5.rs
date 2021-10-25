@@ -1,5 +1,4 @@
-use hdf5;
-use hdf5::types::FixedAscii;
+use hdf5::{types::FixedAscii, H5Type};
 use ndarray::{s, Array, Ix1, Ix2, Ix3, Ix4};
 use num::Complex;
 use std::path::Path;
@@ -10,7 +9,7 @@ use super::base::{
 };
 use super::utils;
 
-#[derive(hdf5::H5Type, Clone, PartialEq, Debug)]
+#[derive(H5Type, Clone, PartialEq, Debug)]
 #[repr(C)]
 struct Complexh5 {
     r: f64,
