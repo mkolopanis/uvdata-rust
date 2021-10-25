@@ -1,6 +1,9 @@
 use hdf5::{types::FixedAscii, H5Type};
 use ndarray::{s, Array, Ix1, Ix2, Ix3, Ix4};
-use num::Complex;
+use num::{
+    cast::{AsPrimitive, FromPrimitive},
+    Complex, Float,
+};
 use std::path::Path;
 
 use super::base::{
@@ -18,20 +21,25 @@ struct Complexh5 {
 
 const MAX_HIST_LENGTH: usize = 20_000;
 
-impl Into<Complex<f64>> for Complexh5 {
-    fn into(self) -> Complex<f64> {
-        Complex::<f64>::new(self.r.into(), self.i.into())
+impl<T: Float + AsPrimitive<f64>> From<Complex<T>> for Complexh5 {
+    fn from(comp: Complex<T>) -> Self {
+        Self {
+            r: comp.re.as_(),
+            i: comp.im.as_(),
+        }
     }
 }
-
-impl Into<Complex<f32>> for Complexh5 {
-    fn into(self) -> Complex<f32> {
-        Complex::<f32>::new(self.r as f32, self.i as f32)
+impl<T: Float + FromPrimitive> From<Complexh5> for Complex<T> {
+    fn from(comp: Complexh5) -> Self {
+        Self {
+            re: FromPrimitive::from_f64(comp.r).unwrap(),
+            im: FromPrimitive::from_f64(comp.i).unwrap(),
+        }
     }
 }
 
 fn read_scalar<T: hdf5::H5Type>(header: &hdf5::Group, param: String) -> hdf5::Result<Option<T>> {
-    match header.link_exists(&param.to_string()) {
+    match header.link_exists(&param) {
         true => Ok(Some(header.dataset(param.as_str())?.read_scalar::<T>()?)),
         false => Ok(None),
     }
@@ -94,15 +102,9 @@ impl UVH5 {
         let earth_omega: Option<f32> = read_scalar::<f32>(&header, "earth_omega".to_string())?;
         let gst0: Option<f32> = read_scalar::<f32>(&header, "gst0".to_string())?;
         let rdate: Option<String> =
-            match read_scalar::<FixedAscii<200>>(&header, "rdate".to_string())? {
-                Some(val) => Some(String::from(val)),
-                None => None,
-            };
+            read_scalar::<FixedAscii<200>>(&header, "rdate".to_string())?.map(String::from);
         let timesys: Option<String> =
-            match read_scalar::<FixedAscii<200>>(&header, "timesys".to_string())? {
-                Some(val) => Some(String::from(val)),
-                None => None,
-            };
+            read_scalar::<FixedAscii<200>>(&header, "timesys".to_string())?.map(String::from);
 
         let x_orientation: Option<FixedAscii<200>> =
             read_scalar::<FixedAscii<200>>(&header, "x_orientation".to_string())?;
@@ -215,7 +217,7 @@ impl UVH5 {
 
         let object_name: String =
             match read_scalar::<FixedAscii<200>>(&header, "object_name".to_string()) {
-                Ok(name) => name.unwrap_or(unknown).to_lowercase().to_string(),
+                Ok(name) => name.unwrap_or(unknown).to_lowercase(),
                 Err(_) => "unknown".to_string(),
             };
 
@@ -229,10 +231,7 @@ impl UVH5 {
         let npols: u8 = read_scalar::<u8>(&header, "Npols".to_string())?.unwrap();
         let ntimes: u32 = read_scalar::<u32>(&header, "Ntimes".to_string())?.unwrap();
         let nfreqs: u32 = read_scalar::<u32>(&header, "Nfreqs".to_string())?.unwrap();
-        let nphases: u32 = match read_scalar::<u32>(&header, "Nphases".to_string())? {
-            Some(int) => int,
-            None => 1,
-        };
+        let nphases: u32 = read_scalar::<u32>(&header, "Nphases".to_string())?.unwrap_or(1);
 
         let meta = UVMeta {
             nbls,
@@ -315,7 +314,7 @@ impl UVH5 {
                     let mut cat: Catalog = Catalog::new();
                     for name in phase_names {
                         let json_str = phase_group
-                            .dataset(&name.as_str())?
+                            .dataset(name.as_str())?
                             .read_scalar::<FixedAscii<20_000>>()?;
 
                         let cat_val: CatTypes = match serde_json::from_str(json_str.as_str()) {
@@ -324,7 +323,7 @@ impl UVH5 {
                             Ok(CatTypes::Ephem(val)) => CatTypes::Ephem(val),
                             Err(err) => return Err(format!("Json Err {}", err).into()),
                         };
-                        cat.insert(name.into(), cat_val);
+                        cat.insert(name, cat_val);
                     }
                     let id_array = header
                         .dataset("phase_center_id_array")?
@@ -350,7 +349,7 @@ impl UVH5 {
                                 &header,
                                 "phase_center_frame".to_string(),
                             ) {
-                                Ok(name) => name.unwrap_or(unknown).to_lowercase().to_string(),
+                                Ok(name) => name.unwrap_or(unknown).to_lowercase(),
                                 Err(_) => "unknown".to_string(),
                             };
                             cat.insert(
