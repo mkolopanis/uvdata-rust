@@ -156,6 +156,12 @@ impl UVMeta {
     }
 }
 
+impl Default for UVMeta {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ArrayMetaData {
     pub spw_array: Array<u32, Ix1>,
