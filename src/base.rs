@@ -94,11 +94,37 @@ pub enum EqConvention {
     Unknown,
 }
 
+impl FromStr for EqConvention {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<EqConvention, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "drift" => Ok(EqConvention::Divide),
+            "phased" => Ok(EqConvention::Multiply),
+            "unknown" => Ok(EqConvention::Unknown),
+            other => Err(format!("Unknown Equalization Convention: {}.", other)),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Orientation {
     East,
     North,
     Unknown,
+}
+
+impl FromStr for Orientation {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<Orientation, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "east" => Ok(Orientation::East),
+            "north" => Ok(Orientation::North),
+            "unknown" => Ok(Orientation::Unknown),
+            other => Err(format!("Unknown Equalization Convention: {}.", other)),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -115,6 +141,72 @@ pub enum BltOrders {
 pub struct BltOrder {
     pub major: BltOrders,
     pub minor: BltOrders,
+}
+
+impl FromStr for BltOrder {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<BltOrder, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "bda, " => Ok(BltOrder {
+                major: BltOrders::Bda,
+                minor: BltOrders::Bda,
+            }),
+            "baseline, time" => Ok(BltOrder {
+                major: BltOrders::Baseline,
+                minor: BltOrders::Time,
+            }),
+            "baseline, ant1" => Ok(BltOrder {
+                major: BltOrders::Baseline,
+                minor: BltOrders::Ant1,
+            }),
+            "baseline, ant2" => Ok(BltOrder {
+                major: BltOrders::Baseline,
+                minor: BltOrders::Ant2,
+            }),
+            "time, baseline" => Ok(BltOrder {
+                major: BltOrders::Time,
+                minor: BltOrders::Baseline,
+            }),
+            "time, ant1" => Ok(BltOrder {
+                major: BltOrders::Time,
+                minor: BltOrders::Ant1,
+            }),
+            "time, ant2" => Ok(BltOrder {
+                major: BltOrders::Time,
+                minor: BltOrders::Ant2,
+            }),
+            "ant1, ant2" => Ok(BltOrder {
+                major: BltOrders::Ant1,
+                minor: BltOrders::Ant2,
+            }),
+            "ant1, time" => Ok(BltOrder {
+                major: BltOrders::Ant1,
+                minor: BltOrders::Time,
+            }),
+            "ant1, baseline" => Ok(BltOrder {
+                major: BltOrders::Ant1,
+                minor: BltOrders::Baseline,
+            }),
+            "ant2, ant1" => Ok(BltOrder {
+                major: BltOrders::Ant2,
+                minor: BltOrders::Ant1,
+            }),
+            "ant2, time" => Ok(BltOrder {
+                major: BltOrders::Ant2,
+                minor: BltOrders::Time,
+            }),
+            "ant2, baseline" => Ok(BltOrder {
+                major: BltOrders::Ant2,
+                minor: BltOrders::Baseline,
+            }),
+            "unknown" => Ok(BltOrder {
+                major: BltOrders::Unknown,
+                minor: BltOrders::Unknown,
+            }),
+            other => Err(format!("Unknown Blt Ordering: {}.", other)),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
