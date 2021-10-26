@@ -74,6 +74,19 @@ pub enum PhaseType {
     Multi,
 }
 
+impl FromStr for PhaseType {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<PhaseType, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "drift" => Ok(PhaseType::Drift),
+            "phased" => Ok(PhaseType::Phased),
+            "multi" => Ok(PhaseType::Multi),
+            other => Err(format!("Unknown phase type: {}.", other)),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum EqConvention {
     Divide,

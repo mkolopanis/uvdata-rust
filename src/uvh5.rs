@@ -204,11 +204,7 @@ impl UVH5 {
         let phase_type: Option<FixedAscii<200>> =
             read_scalar::<FixedAscii<200>>(&header, "phase_type".to_string())?;
 
-        let phase_type: PhaseType = match phase_type.unwrap_or(unknown).to_lowercase().as_str() {
-            "drift" => PhaseType::Drift,
-            "phased" => PhaseType::Phased,
-            _ => PhaseType::Drift,
-        };
+        let phase_type: PhaseType = PhaseType::from_str(&phase_type.unwrap_or(unknown))?;
 
         let object_name: String =
             match read_scalar::<FixedAscii<200>>(&header, "object_name".to_string()) {
