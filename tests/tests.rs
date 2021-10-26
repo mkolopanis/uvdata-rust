@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[macro_use]
+extern crate approx;
+
 use ndarray::Array3;
 use num_complex::Complex;
 use std::path::Path;
@@ -266,5 +270,40 @@ fn test_read_files() {
                 Err(_) => assert!(false),
             };
         }
+    }
+}
+
+#[test]
+fn test_latlonalt_fn() {
+    let mut meta = UVMeta::new();
+    let ref_latlonalt = [-26.7f64, 116.7f64, 377.8f64];
+    let ref_xyz = [-2562123.42683, 5094215.40141, -2848728.58869];
+    meta.telescope_location = ref_xyz;
+
+    let uvd: UVData<f64, f32> = UVData::<f64, f32>::from(meta);
+    let telescope_lla = uvd.telescope_location_latlonalt();
+    for (x1, x2) in [telescope_lla.0, telescope_lla.1, telescope_lla.2]
+        .iter()
+        .zip(
+            [
+                ref_latlonalt[0].to_radians(),
+                ref_latlonalt[1].to_radians(),
+                ref_latlonalt[2],
+            ]
+            .iter(),
+        )
+    {
+        assert_abs_diff_eq!(x1, x2, epsilon = 1e-3)
+    }
+    let telescope_lla_degrees = uvd.telescope_location_latlonalt_degrees();
+    for (x1, x2) in [
+        telescope_lla_degrees.0,
+        telescope_lla_degrees.1,
+        telescope_lla_degrees.2,
+    ]
+    .iter()
+    .zip(ref_latlonalt.iter())
+    {
+        assert_abs_diff_eq!(x1, x2, epsilon = 1e-3)
     }
 }
