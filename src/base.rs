@@ -71,6 +71,12 @@ impl FromStr for VisUnit {
     }
 }
 
+impl std::fmt::Display for VisUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum PhaseType {
     Drift,
@@ -92,6 +98,11 @@ impl FromStr for PhaseType {
             "multi" => Ok(PhaseType::Multi),
             other => Err(format!("Unknown phase type: {}.", other)),
         }
+    }
+}
+impl std::fmt::Display for PhaseType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
     }
 }
 
@@ -118,6 +129,11 @@ impl FromStr for EqConvention {
         }
     }
 }
+impl std::fmt::Display for EqConvention {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Orientation {
@@ -142,6 +158,11 @@ impl FromStr for Orientation {
         }
     }
 }
+impl std::fmt::Display for Orientation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum BltOrders {
@@ -152,11 +173,21 @@ pub enum BltOrders {
     Bda,
     Unknown,
 }
+impl std::fmt::Display for BltOrders {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BltOrder {
     pub major: BltOrders,
     pub minor: BltOrders,
+}
+impl std::fmt::Display for BltOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:}, {:}", self.major, self.minor)
+    }
 }
 
 impl FromStr for BltOrder {
