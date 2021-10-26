@@ -58,7 +58,11 @@ impl FromStr for VisUnit {
     type Err = String;
 
     fn from_str(input: &str) -> Result<VisUnit, Self::Err> {
-        match input.trim_matches(' ').to_lowercase().as_str() {
+        match input
+            .trim_matches(char::is_whitespace)
+            .to_lowercase()
+            .as_str()
+        {
             "uncalib" => Ok(VisUnit::Uncalib),
             "jy" => Ok(VisUnit::Jansky),
             "k str" => Ok(VisUnit::Kelvinstr),
@@ -78,7 +82,11 @@ impl FromStr for PhaseType {
     type Err = String;
 
     fn from_str(input: &str) -> Result<PhaseType, Self::Err> {
-        match input.trim_matches(' ').to_lowercase().as_str() {
+        match input
+            .trim_matches(char::is_whitespace)
+            .to_lowercase()
+            .as_str()
+        {
             "drift" => Ok(PhaseType::Drift),
             "phased" => Ok(PhaseType::Phased),
             "multi" => Ok(PhaseType::Multi),
@@ -98,7 +106,11 @@ impl FromStr for EqConvention {
     type Err = String;
 
     fn from_str(input: &str) -> Result<EqConvention, Self::Err> {
-        match input.trim_matches(' ').to_lowercase().as_str() {
+        match input
+            .trim_matches(char::is_whitespace)
+            .to_lowercase()
+            .as_str()
+        {
             "divide" => Ok(EqConvention::Divide),
             "multiply" => Ok(EqConvention::Multiply),
             "unknown" => Ok(EqConvention::Unknown),
@@ -118,7 +130,11 @@ impl FromStr for Orientation {
     type Err = String;
 
     fn from_str(input: &str) -> Result<Orientation, Self::Err> {
-        match input.trim_matches(' ').to_lowercase().as_str() {
+        match input
+            .trim_matches(char::is_whitespace)
+            .to_lowercase()
+            .as_str()
+        {
             "east" => Ok(Orientation::East),
             "north" => Ok(Orientation::North),
             "unknown" => Ok(Orientation::Unknown),
@@ -147,7 +163,11 @@ impl FromStr for BltOrder {
     type Err = String;
 
     fn from_str(input: &str) -> Result<BltOrder, Self::Err> {
-        match input.trim_matches(' ').to_lowercase().as_str() {
+        match input
+            .trim_matches(char::is_whitespace)
+            .to_lowercase()
+            .as_str()
+        {
             "bda," => Ok(BltOrder {
                 major: BltOrders::Bda,
                 minor: BltOrders::Bda,
