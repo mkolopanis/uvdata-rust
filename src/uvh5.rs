@@ -8,8 +8,8 @@ use num_traits::{
 use std::{path::Path, str::FromStr};
 
 use super::base::{
-    ArrayMetaData, BltOrder, BltOrders, CatTypes, Catalog, EqConvention, Orientation, PhaseType,
-    SiderealVal, UVMeta, UnphasedVal, VisUnit,
+    ArrayMetaData, BltOrder, CatTypes, Catalog, EqConvention, Orientation, PhaseType, SiderealVal,
+    UVMeta, UnphasedVal, VisUnit,
 };
 use super::utils;
 
@@ -101,78 +101,14 @@ impl UVH5 {
         let timesys: Option<String> =
             read_scalar::<FixedAscii<200>>(&header, "timesys".to_string())?.map(String::from);
 
-        let x_orientation: Option<FixedAscii<200>> =
-            read_scalar::<FixedAscii<200>>(&header, "x_orientation".to_string())?;
+        let x_orientation: Orientation = Orientation::from_str(
+            &read_scalar::<FixedAscii<200>>(&header, "x_orientation".to_string())?
+                .unwrap_or(unknown),
+        )?;
 
-        let x_orientation: Orientation =
-            match x_orientation.unwrap_or(unknown).to_lowercase().as_str() {
-                "east" => Orientation::East,
-                "north" => Orientation::North,
-                _ => Orientation::Unknown,
-            };
-
-        let blt_order: Option<FixedAscii<200>> =
-            read_scalar::<FixedAscii<200>>(&header, "blt_order".to_string())?;
-
-        let blt_order: BltOrder = match blt_order.unwrap_or(unknown).to_lowercase().as_str() {
-            "bda, " => BltOrder {
-                major: BltOrders::Bda,
-                minor: BltOrders::Bda,
-            },
-            "baseline, time" => BltOrder {
-                major: BltOrders::Baseline,
-                minor: BltOrders::Time,
-            },
-            "baseline, ant1" => BltOrder {
-                major: BltOrders::Baseline,
-                minor: BltOrders::Ant1,
-            },
-            "baseline, ant2" => BltOrder {
-                major: BltOrders::Baseline,
-                minor: BltOrders::Ant2,
-            },
-            "time, baseline" => BltOrder {
-                major: BltOrders::Time,
-                minor: BltOrders::Baseline,
-            },
-            "time, ant1" => BltOrder {
-                major: BltOrders::Time,
-                minor: BltOrders::Ant1,
-            },
-            "time, ant2" => BltOrder {
-                major: BltOrders::Time,
-                minor: BltOrders::Ant2,
-            },
-            "ant1, ant2" => BltOrder {
-                major: BltOrders::Ant1,
-                minor: BltOrders::Ant2,
-            },
-            "ant1, time" => BltOrder {
-                major: BltOrders::Ant1,
-                minor: BltOrders::Time,
-            },
-            "ant1, baseline" => BltOrder {
-                major: BltOrders::Ant1,
-                minor: BltOrders::Baseline,
-            },
-            "ant2, ant1" => BltOrder {
-                major: BltOrders::Ant2,
-                minor: BltOrders::Ant1,
-            },
-            "ant2, time" => BltOrder {
-                major: BltOrders::Ant2,
-                minor: BltOrders::Time,
-            },
-            "ant2, baseline" => BltOrder {
-                major: BltOrders::Ant2,
-                minor: BltOrders::Baseline,
-            },
-            "unknown" => BltOrder {
-                major: BltOrders::Unknown,
-                minor: BltOrders::Unknown,
-            },
-            _ => return Err("Found unknown blt ordering".into()),
-        };
+        let blt_order: BltOrder = BltOrder::from_str(
+            &read_scalar::<FixedAscii<200>>(&header, "blt_order".to_string())?.unwrap_or(unknown),
+        )?;
 
         let antenna_diameters: Option<Array<f32, Ix1>> =
             match header.link_exists(&"antenna_diameters".to_string()) {
@@ -188,23 +124,14 @@ impl UVH5 {
             false => None,
         };
 
-        let eq_coeffs_convention: Option<FixedAscii<200>> =
-            read_scalar::<FixedAscii<200>>(&header, "eq_coeffs_convention".to_string())?;
+        let eq_coeffs_convention: EqConvention = EqConvention::from_str(
+            &read_scalar::<FixedAscii<200>>(&header, "eq_coeffs_convention".to_string())?
+                .unwrap_or(unknown),
+        )?;
 
-        let eq_coeffs_convention: EqConvention = match eq_coeffs_convention
-            .unwrap_or(unknown)
-            .to_lowercase()
-            .as_str()
-        {
-            "divide" => EqConvention::Divide,
-            "multiply" => EqConvention::Multiply,
-            _ => EqConvention::Unknown,
-        };
-
-        let phase_type: Option<FixedAscii<200>> =
-            read_scalar::<FixedAscii<200>>(&header, "phase_type".to_string())?;
-
-        let phase_type: PhaseType = PhaseType::from_str(&phase_type.unwrap_or(unknown))?;
+        let phase_type: PhaseType = PhaseType::from_str(
+            &read_scalar::<FixedAscii<200>>(&header, "phase_type".to_string())?.unwrap_or(unknown),
+        )?;
 
         let object_name: String =
             match read_scalar::<FixedAscii<200>>(&header, "object_name".to_string()) {
