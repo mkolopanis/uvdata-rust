@@ -1,6 +1,6 @@
 use ndarray::{Array, Ix1, Ix2};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 // TODO: make and enum of the different catalog types
 // and catalog structs themselves probably too
@@ -53,6 +53,18 @@ pub enum VisUnit {
     Uncalib,
     Jansky,
     Kelvinstr,
+}
+impl FromStr for VisUnit {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<VisUnit, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "uncalib" => Ok(VisUnit::Uncalib),
+            "jy" => Ok(VisUnit::Jansky),
+            "k str" => Ok(VisUnit::Kelvinstr),
+            unit => Err(format!("Unknown Visibility Unit: {}.", unit)),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
