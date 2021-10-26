@@ -5,7 +5,7 @@ use num_traits::{
     cast::{AsPrimitive, FromPrimitive},
     Float,
 };
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
 use super::base::{
     ArrayMetaData, BltOrder, BltOrders, CatTypes, Catalog, EqConvention, Orientation, PhaseType,
@@ -81,17 +81,11 @@ impl UVH5 {
             .to_string();
 
         let vis_units: VisUnit = match header.link_exists(&"vis_units".to_string()) {
-            true => match header
-                .dataset("vis_units")?
-                .read_scalar::<FixedAscii<200>>()?
-                .to_lowercase()
-                .as_str()
-            {
-                "uncalib" => VisUnit::Uncalib,
-                "jy" => VisUnit::Jansky,
-                "k str" => VisUnit::Kelvinstr,
-                unit => return Err(format!("Unknown Vis Unit: {:}", unit).into()),
-            },
+            true => VisUnit::from_str(
+                &header
+                    .dataset("vis_units")?
+                    .read_scalar::<FixedAscii<200>>()?,
+            )?,
             false => VisUnit::Uncalib,
         };
 
