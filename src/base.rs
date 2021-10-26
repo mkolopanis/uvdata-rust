@@ -354,6 +354,7 @@ pub struct ArrayMetaData {
     pub phase_center_catalog: Catalog,
     pub phase_center_id_array: Array<u32, Ix1>,
 }
+impl Eq for ArrayMetaData {}
 
 impl ArrayMetaData {
     pub fn new(meta: &UVMeta) -> ArrayMetaData {

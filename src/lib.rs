@@ -72,6 +72,15 @@ where
             flag_array,
         }
     }
+
+    pub fn telescope_location_latlonalt(&self) -> (f64, f64, f64) {
+        utils::latlonalt_from_xyz(self.meta.telescope_location)
+    }
+
+    pub fn telescope_location_latlonalt_degrees(&self) -> (f64, f64, f64) {
+        let lla: (f64, f64, f64) = utils::latlonalt_from_xyz(self.meta.telescope_location);
+        (lla.0.to_degrees(), lla.1.to_degrees(), lla.2)
+    }
 }
 
 impl From<UVMeta> for UVData<f64, f32> {
