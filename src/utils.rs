@@ -1,5 +1,5 @@
 use ndarray::{azip, Array, Ix1};
-use num::{cast::FromPrimitive, Float, PrimInt};
+use num_traits::{cast::FromPrimitive, Float, PrimInt};
 
 const GPS_A: f64 = 6378137f64;
 const GPS_B: f64 = 6356752.31424518;
@@ -72,7 +72,7 @@ pub fn antnums_to_baseline<T: PrimInt + FromPrimitive>(
                 *bl = T::from_u32(2048u32).unwrap()
                     * (a1 + one)
                     + (a2 + one)
-                    + num::pow(two, 16)
+                    + two.pow(16)
             })
         }
     };

@@ -3,7 +3,8 @@
 extern crate approx;
 
 use ndarray::{Array, Ix3};
-use num::{Complex, Float};
+use num_complex::Complex;
+use num_traits::Float;
 use std::path::Path;
 
 mod base;
