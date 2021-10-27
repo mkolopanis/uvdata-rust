@@ -2,9 +2,10 @@
 #[macro_use]
 extern crate approx;
 
+use hdf5::H5Type;
 use ndarray::{Array, Ix3};
 use num_complex::Complex;
-use num_traits::Float;
+use num_traits::{cast::FromPrimitive, Float};
 use std::path::Path;
 
 mod base;
@@ -89,8 +90,12 @@ where
     }
 }
 
-impl From<UVH5> for UVData<f64, f32> {
-    fn from(uvh5: UVH5) -> UVData<f64, f32> {
+impl<T, S> From<UVH5<T, S>> for UVData<T, S>
+where
+    T: Float + FromPrimitive + H5Type,
+    S: Float + H5Type,
+{
+    fn from(uvh5: UVH5<T, S>) -> UVData<T, S> {
         UVData {
             meta: uvh5.meta,
             meta_arrays: uvh5.meta_arrays,
@@ -101,9 +106,13 @@ impl From<UVH5> for UVData<f64, f32> {
     }
 }
 
-impl UVData<f64, f32> {
-    pub fn read_uvh5<P: AsRef<Path>>(path: P, read_data: bool) -> hdf5::Result<UVData<f64, f32>> {
-        Ok(UVData::<f64, f32>::from(UVH5::from_file::<P>(
+impl<T, S> UVData<T, S>
+where
+    T: Float + FromPrimitive + H5Type,
+    S: Float + H5Type,
+{
+    pub fn read_uvh5<P: AsRef<Path>>(path: P, read_data: bool) -> hdf5::Result<UVData<T, S>> {
+        Ok(UVData::<T, S>::from(UVH5::<T, S>::from_file::<P>(
             path, read_data,
         )?))
     }
