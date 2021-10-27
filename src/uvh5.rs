@@ -1,5 +1,5 @@
 use hdf5::{types::FixedAscii, H5Type};
-use ndarray::{s, Array, Ix1, Ix2, Ix3, Ix4};
+use ndarray::{s, Array, Axis, Ix1, Ix2, Ix3, Ix4};
 use num_complex::Complex;
 use num_traits::{
     cast::{AsPrimitive, FromPrimitive},
@@ -207,7 +207,7 @@ where
                 // need to squeeze out the spw axis
                 // we have defined uvdata to only work
                 // with future array shapes
-                freq_dset.read::<f64, Ix2>()?.slice_move(s![0, ..])
+                freq_dset.read::<f64, Ix2>()?.remove_axis(Axis(0))
             }
             ndim => return Err(format!("Incompatible dimensions of freq array: {:}", ndim).into()),
         };
@@ -361,12 +361,12 @@ where
                         // with future array shapes
                         let data: Array<Complex<T>, Ix3> = visdata
                             .read::<Complexh5, Ix4>()?
-                            .slice_move(s![.., 0, .., ..])
+                            .remove_axis(Axis(1))
                             .mapv(|x| x.into());
                         let flags: Array<bool, Ix3> =
-                            flagdata.read::<bool, Ix4>()?.slice_move(s![.., 0, .., ..]);
+                            flagdata.read::<bool, Ix4>()?.remove_axis(Axis(1));
                         let samps: Array<S, Ix3> =
-                            nsampledata.read::<S, Ix4>()?.slice_move(s![.., 0, .., ..]);
+                            nsampledata.read::<S, Ix4>()?.remove_axis(Axis(1));
                         (Some(data), Some(samps), Some(flags))
                     }
                     ndim => {
