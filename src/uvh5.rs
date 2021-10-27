@@ -47,16 +47,24 @@ fn read_scalar<T: hdf5::H5Type>(header: &hdf5::Group, param: String) -> hdf5::Re
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct UVH5 {
+pub struct UVH5<T, S>
+where
+    T: Float + FromPrimitive + H5Type,
+    S: Float + H5Type,
+{
     pub meta: UVMeta,
     pub meta_arrays: ArrayMetaData,
-    pub data_array: Option<Array<Complex<f64>, Ix3>>,
-    pub nsample_array: Option<Array<f32, Ix3>>,
+    pub data_array: Option<Array<Complex<T>, Ix3>>,
+    pub nsample_array: Option<Array<S, Ix3>>,
     pub flag_array: Option<Array<bool, Ix3>>,
 }
 
-impl UVH5 {
-    pub fn from_file<P: AsRef<Path>>(fname: P, read_data: bool) -> hdf5::Result<UVH5> {
+impl<T, S> UVH5<T, S>
+where
+    T: Float + FromPrimitive + H5Type,
+    S: Float + H5Type,
+{
+    pub fn from_file<P: AsRef<Path>>(fname: P, read_data: bool) -> hdf5::Result<UVH5<T, S>> {
         let h5file = hdf5::File::open(fname)?;
 
         // read metadata
@@ -333,25 +341,24 @@ impl UVH5 {
                 let nsampledata = dgroup.dataset("nsamples")?;
                 match visdata.ndim() {
                     3 => {
-                        let data: Array<Complex<f64>, Ix3> =
+                        let data: Array<Complex<T>, Ix3> =
                             visdata.read::<Complexh5, Ix3>()?.mapv(|x| x.into());
                         let flags: Array<bool, Ix3> = flagdata.read::<bool, Ix3>()?;
-                        let samps: Array<f32, Ix3> = nsampledata.read::<f32, Ix3>()?;
+                        let samps: Array<S, Ix3> = nsampledata.read::<S, Ix3>()?;
                         (Some(data), Some(samps), Some(flags))
                     }
                     4 => {
                         // need to squeeze out the spw axis
                         // we have defined uvdata to only work
                         // with future array shapes
-                        let data: Array<Complex<f64>, Ix3> = visdata
+                        let data: Array<Complex<T>, Ix3> = visdata
                             .read::<Complexh5, Ix4>()?
                             .slice_move(s![.., 0, .., ..])
                             .mapv(|x| x.into());
                         let flags: Array<bool, Ix3> =
                             flagdata.read::<bool, Ix4>()?.slice_move(s![.., 0, .., ..]);
-                        let samps: Array<f32, Ix3> = nsampledata
-                            .read::<f32, Ix4>()?
-                            .slice_move(s![.., 0, .., ..]);
+                        let samps: Array<S, Ix3> =
+                            nsampledata.read::<S, Ix4>()?.slice_move(s![.., 0, .., ..]);
                         (Some(data), Some(samps), Some(flags))
                     }
                     ndim => {
@@ -364,7 +371,7 @@ impl UVH5 {
             false => (None, None, None),
         };
         h5file.close()?;
-        let uvh5 = UVH5 {
+        let uvh5 = UVH5::<T, S> {
             meta,
             meta_arrays,
             data_array,
