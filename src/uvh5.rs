@@ -176,6 +176,7 @@ where
             instrument,
             telescope_name,
             telescope_location,
+            object_name: object_name.clone(),
             eq_coeffs_convention,
             dut1,
             gst0,
@@ -193,6 +194,10 @@ where
         let lst_array: Array<f64, Ix1> = header.dataset("lst_array")?.read::<f64, Ix1>()?;
         let ant_1_array: Array<u32, Ix1> = header.dataset("ant_1_array")?.read::<u32, Ix1>()?;
         let ant_2_array: Array<u32, Ix1> = header.dataset("ant_2_array")?.read::<u32, Ix1>()?;
+        let antenna_names: Array<String, Ix1> = header
+            .dataset("antenna_names")?
+            .read::<FixedAscii<200>, Ix1>()?
+            .mapv(|x| x.into());
         let baseline_array: Array<u32, Ix1> =
             utils::antnums_to_baseline(&ant_1_array, &ant_2_array, false);
         let freq_dset = header.dataset("freq_array")?;
@@ -207,10 +212,11 @@ where
             ndim => return Err(format!("Incompatible dimensions of freq array: {:}", ndim).into()),
         };
 
-        let spw_id_array: Array<u32, Ix1> = match header.link_exists(&"spw_id_array".to_string()) {
-            true => header.dataset("spw_id_array")?.read::<u32, Ix1>()?,
-            false => Array::<u32, Ix1>::zeros(meta.nfreqs as usize),
-        };
+        let spw_id_array: Array<u32, Ix1> =
+            match header.link_exists(&"flex_spw_id_array".to_string()) {
+                true => header.dataset("flex_spw_id_array")?.read::<u32, Ix1>()?,
+                false => Array::<u32, Ix1>::zeros(meta.nfreqs as usize),
+            };
         let polarization_array: Array<i8, Ix1> =
             header.dataset("polarization_array")?.read::<i8, Ix1>()?;
         let integration_time: Array<f64, Ix1> =
@@ -232,6 +238,7 @@ where
             header.dataset("antenna_numbers")?.read::<u32, Ix1>()?;
         let antenna_positions: Array<f64, Ix2> =
             header.dataset("antenna_positions")?.read::<f64, Ix2>()?;
+
         let (phase_center_catalog, phase_center_id_array) =
             match header.link_exists("phase_center_catalog") {
                 true => {
@@ -326,6 +333,7 @@ where
             integration_time,
             channel_width,
             antenna_numbers,
+            antenna_names,
             antenna_positions,
             eq_coeffs,
             antenna_diameters,
