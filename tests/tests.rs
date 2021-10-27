@@ -1,5 +1,5 @@
 use ndarray::Array3;
-use num::Complex;
+use num_complex::Complex;
 use std::path::Path;
 use uvdata::*;
 
