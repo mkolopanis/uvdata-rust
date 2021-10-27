@@ -185,16 +185,22 @@ fn init_metadata_false_f32() {
         uvplane_reference_time: None,
         history: "".to_string(),
     };
-    let test_data = Array3::<Complex<f32>>::zeros((
-        meta.nblts as usize,
-        meta.ntimes as usize,
-        meta.npols as usize,
-    ));
-    let test_nsample = Array3::<f32>::zeros((
-        meta.nblts as usize,
-        meta.ntimes as usize,
-        meta.npols as usize,
-    ));
+    let test_data = Array3::<Complex<f32>>::from_elem(
+        (
+            meta.nblts as usize,
+            meta.ntimes as usize,
+            meta.npols as usize,
+        ),
+        Complex { re: 2.0, im: -3.2 },
+    );
+    let test_nsample = Array3::<f32>::from_elem(
+        (
+            meta.nblts as usize,
+            meta.ntimes as usize,
+            meta.npols as usize,
+        ),
+        3.1415,
+    );
     let test_flag = Array3::<bool>::from_elem(
         (
             meta.nblts as usize,
@@ -203,7 +209,10 @@ fn init_metadata_false_f32() {
         ),
         false,
     );
-    let uvd = UVData::<f32, f32>::new(meta, false);
+    let mut uvd = UVData::<f32, f32>::new(meta, false);
+    uvd.data_array = Some(test_data.clone());
+    uvd.nsample_array = Some(test_nsample.clone());
+    uvd.flag_array = Some(test_flag.clone());
 
     assert_eq!(uvd.data_array.unwrap(), test_data);
     assert_eq!(uvd.nsample_array.unwrap(), test_nsample);
