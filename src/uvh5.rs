@@ -1,5 +1,5 @@
 use hdf5::{types::FixedAscii, H5Type};
-use ndarray::{s, Array, Axis, Ix1, Ix2, Ix3, Ix4};
+use ndarray::{Array, Axis, Ix1, Ix2, Ix3, Ix4};
 use num_complex::Complex;
 use num_traits::{
     cast::{AsPrimitive, FromPrimitive},
