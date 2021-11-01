@@ -666,18 +666,20 @@ where
 
         let dgroup = h5file.create_group("/Data")?;
 
-        let data_builder = dgroup.new_dataset_builder();
         let h5_data: Array<Complexh5, Ix3> = self.data_array.unwrap().mapv(|x| x.into());
-        data_builder.with_data(&h5_data).create("visdata")?;
+        dgroup
+            .new_dataset_builder()
+            .with_data(&h5_data)
+            .create("visdata")?;
 
-        let flag_builder = dgroup.new_dataset_builder();
-        flag_builder
+        dgroup
+            .new_dataset_builder()
             .with_data(&self.flag_array.unwrap())
             .lzf()
             .create("flags")?;
 
-        let sample_builder = dgroup.new_dataset_builder();
-        sample_builder
+        dgroup
+            .new_dataset_builder()
             .with_data(&self.nsample_array.unwrap())
             .lzf()
             .create("nsamples")?;
