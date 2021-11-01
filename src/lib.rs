@@ -5,7 +5,10 @@ extern crate approx;
 use hdf5::H5Type;
 use ndarray::{Array, Ix3};
 use num_complex::Complex;
-use num_traits::{cast::FromPrimitive, Float};
+use num_traits::{
+    cast::{AsPrimitive, FromPrimitive},
+    Float,
+};
 use std::path::Path;
 
 mod base;
@@ -101,7 +104,7 @@ where
 
 impl<T, S> From<UVH5<T, S>> for UVData<T, S>
 where
-    T: Float + FromPrimitive + H5Type,
+    T: Float + AsPrimitive<f64> + FromPrimitive + H5Type,
     S: Float + H5Type,
 {
     fn from(uvh5: UVH5<T, S>) -> UVData<T, S> {
@@ -115,14 +118,35 @@ where
     }
 }
 
+impl<T, S> From<UVData<T, S>> for UVH5<T, S>
+where
+    T: Float + FromPrimitive + AsPrimitive<f64> + H5Type,
+    S: Float + H5Type,
+{
+    fn from(uvd: UVData<T, S>) -> UVH5<T, S> {
+        UVH5 {
+            meta: uvd.meta,
+            meta_arrays: uvd.meta_arrays,
+            data_array: uvd.data_array,
+            nsample_array: uvd.nsample_array,
+            flag_array: uvd.flag_array,
+        }
+    }
+}
+
 impl<T, S> UVData<T, S>
 where
-    T: Float + FromPrimitive + H5Type,
+    T: Float + AsPrimitive<f64> + FromPrimitive + H5Type,
     S: Float + H5Type,
 {
     pub fn read_uvh5<P: AsRef<Path>>(path: P, read_data: bool) -> hdf5::Result<UVData<T, S>> {
         Ok(UVData::<T, S>::from(UVH5::<T, S>::from_file::<P>(
             path, read_data,
         )?))
+    }
+
+    pub fn write_uvh5<P: AsRef<Path>>(self, path: P, overwrite: bool) -> hdf5::Result<()> {
+        UVH5::<T, S>::from(self).to_file::<P>(path, overwrite)?;
+        Ok(())
     }
 }
