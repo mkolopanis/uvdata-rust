@@ -167,7 +167,7 @@ where
         let nants_telescope: u32 = read_scalar::<u32>(&header, "Nants_telescope")?.unwrap();
         let nbls: u32 = read_scalar::<u32>(&header, "Nbls")?.unwrap();
         let nblts: u32 = read_scalar::<u32>(&header, "Nblts")?.unwrap();
-        let nspws: u32 = read_scalar::<u32>(&header, "Nblts")?.unwrap();
+        let nspws: u32 = read_scalar::<u32>(&header, "Nspws")?.unwrap();
         let npols: u8 = read_scalar::<u8>(&header, "Npols")?.unwrap();
         let ntimes: u32 = read_scalar::<u32>(&header, "Ntimes")?.unwrap();
         let nfreqs: u32 = read_scalar::<u32>(&header, "Nfreqs")?.unwrap();
@@ -569,6 +569,9 @@ where
             .new_dataset_builder()
             .with_data(&self.meta_arrays.spw_id_array)
             .create("flex_spw_id_array")?;
+
+        write_scalar(&header, "flex_spw", &true)?;
+
         header
             .new_dataset_builder()
             .with_data(&self.meta_arrays.polarization_array)
