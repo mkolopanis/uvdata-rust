@@ -1,6 +1,6 @@
 use ndarray::{Array, Ix1, Ix2};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr};
 
 // TODO: make and enum of the different catalog types
 // and catalog structs themselves probably too
@@ -46,7 +46,7 @@ pub enum CatTypes {
     Ephem(EphemVal),
 }
 
-pub type Catalog = HashMap<String, CatTypes>;
+pub type Catalog = BTreeMap<String, CatTypes>;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum VisUnit {
@@ -186,7 +186,12 @@ pub struct BltOrder {
 }
 impl std::fmt::Display for BltOrder {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:}, {:}", self.major, self.minor)
+        write!(
+            f,
+            "{:}, {:}",
+            self.major.to_string().to_lowercase(),
+            self.minor.to_string().to_lowercase()
+        )
     }
 }
 
