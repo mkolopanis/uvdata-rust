@@ -21,7 +21,9 @@ pub use self::base::{
     ArrayMetaData, BltOrder, BltOrders, CatTypes, Catalog, EqConvention, Orientation, PhaseType,
     SiderealVal, UVMeta, UnphasedVal, VisUnit,
 };
-pub use self::utils::{antnums_to_baseline, latlonalt_from_xyz, xyz_from_latlonalt};
+pub use self::utils::{
+    antnums_to_baseline, baseline_to_antnums, latlonalt_from_xyz, xyz_from_latlonalt,
+};
 
 fn compare_complex_arrays<T, U>(
     array1: &Array<Complex<T>, U>,
