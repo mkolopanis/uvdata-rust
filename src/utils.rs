@@ -79,10 +79,31 @@ pub fn antnums_to_baseline<T: PrimInt + FromPrimitive>(
     baselines
 }
 
+pub fn baseline_to_antnums<T: PrimInt + FromPrimitive + ndarray::ScalarOperand>(
+    baselines: &Array<T, Ix1>,
+    use256: bool,
+) -> (Array<T, Ix1>, Array<T, Ix1>) {
+    let one = T::one();
+    let modulus = match use256 {
+        false => T::from_u32(2048u32).unwrap(),
+        true => T::from_u32(256u32).unwrap(),
+    };
+    let bls = match use256 {
+        true => baselines.clone(),
+        false => {
+            let two_16: T = (one + one).pow(16);
+            baselines.mapv(|x| x - two_16)
+        }
+    };
+    let a2 = &bls % modulus - one;
+    let a1 = (bls - (&a2 + one)) / modulus - one;
+    (a1, a2)
+}
+
 #[cfg(test)]
 mod test {
 
-    use super::{antnums_to_baseline, latlonalt_from_xyz, xyz_from_latlonalt};
+    use super::{antnums_to_baseline, baseline_to_antnums, latlonalt_from_xyz, xyz_from_latlonalt};
     use ndarray::array;
 
     #[test]
@@ -124,5 +145,25 @@ mod test {
             array![257u32, 1031u32],
             antnums_to_baseline(&ant_1, &ant_2, true)
         );
+    }
+
+    #[test]
+    fn bls_to_anums() {
+        let bls = array![88085u32, 641335u32];
+        let ant_1 = array![10u32, 280u32];
+        let ant_2 = array![20u32, 310u32];
+        let anums = baseline_to_antnums(&bls, false);
+        assert_eq!(ant_1, anums.0);
+        assert_eq!(ant_2, anums.1)
+    }
+
+    #[test]
+    fn bls_to_anums256() {
+        let bls = array![257u32, 1031u32];
+        let ant_1 = array![0u32, 3u32];
+        let ant_2 = array![0u32, 6u32];
+        let anums = baseline_to_antnums(&bls, true);
+        assert_eq!(ant_1, anums.0);
+        assert_eq!(ant_2, anums.1)
     }
 }
