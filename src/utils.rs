@@ -79,7 +79,7 @@ pub fn antnums_to_baseline<T: PrimInt + FromPrimitive>(
     baselines
 }
 
-pub fn baseline_to_antnums<T: PrimInt + FromPrimitive + ndarray::ScalarOperand>(
+pub fn baseline_to_antnums<T: PrimInt + FromPrimitive>(
     baselines: &Array<T, Ix1>,
     use256: bool,
 ) -> (Array<T, Ix1>, Array<T, Ix1>) {
@@ -95,9 +95,13 @@ pub fn baseline_to_antnums<T: PrimInt + FromPrimitive + ndarray::ScalarOperand>(
             baselines.mapv(|x| x - two_16)
         }
     };
-    let a2 = &bls % modulus - one;
-    let a1 = (bls - (&a2 + one)) / modulus - one;
-    (a1, a2)
+    let ant2 = bls.mapv(|x| (x % modulus) - one);
+    let ant1 = bls
+        .iter()
+        .zip(ant2.iter())
+        .map(|(&bl, &a2)| (bl - (a2 + one)) / modulus - one)
+        .collect();
+    (ant1, ant2)
 }
 
 #[cfg(test)]
