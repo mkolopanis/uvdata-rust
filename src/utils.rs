@@ -95,8 +95,8 @@ pub fn baseline_to_antnums<T: PrimInt + FromPrimitive>(
             baselines.mapv(|x| x - two_16)
         }
     };
-    let ant2 = bls.mapv(|x| (x % modulus) - one);
-    let ant1 = bls
+    let ant2: Array<T, Ix1> = bls.mapv(|x| (x % modulus) - one);
+    let ant1: Array<T, Ix1> = bls
         .iter()
         .zip(ant2.iter())
         .map(|(&bl, &a2)| (bl - (a2 + one)) / modulus - one)
@@ -152,7 +152,7 @@ mod test {
     }
 
     #[test]
-    fn bls_to_anums() {
+    fn bls_to_antnums() {
         let bls = array![88085u32, 641335u32];
         let ant_1 = array![10u32, 280u32];
         let ant_2 = array![20u32, 310u32];
@@ -162,7 +162,7 @@ mod test {
     }
 
     #[test]
-    fn bls_to_anums256() {
+    fn bls_to_antnums256() {
         let bls = array![257u32, 1031u32];
         let ant_1 = array![0u32, 3u32];
         let ant_2 = array![0u32, 6u32];
