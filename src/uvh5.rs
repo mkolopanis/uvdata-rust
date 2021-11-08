@@ -687,6 +687,8 @@ where
             .lzf()
             .create("nsamples")?;
 
+        h5file.close()?;
+
         Ok(())
     }
 }
