@@ -11,7 +11,7 @@ test = true
 bench = false
 
 [dependencies]
-approx = "0.5"
+approx = "0.4"
 num-complex = "0.4"
 num-traits = "^0.2"
 ndarray = { version = "0.15.3", features = ["approx", "serde"]}

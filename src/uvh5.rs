@@ -310,8 +310,8 @@ where
                             CatTypes::Sidereal(SiderealVal {
                                 cat_id: 0,
                                 cat_type: "sidereal".to_string(),
-                                cat_lon: read_scalar::<f64>(&header, "phase_center_ra")?.unwrap(),
-                                cat_lat: read_scalar::<f64>(&header, "phase_center_dec")?.unwrap(),
+                                cat_lat: read_scalar::<f64>(&header, "phase_center_ra")?.unwrap(),
+                                cat_lon: read_scalar::<f64>(&header, "phase_center_dec")?.unwrap(),
                                 cat_frame,
                                 cat_epoch: read_scalar::<f64>(&header, "phase_center_epoch")?
                                     .unwrap(),
@@ -619,8 +619,31 @@ where
                 .expect("Unable to write antenna_diameters.");
         }
 
-        match self.meta.nphases {
-            1 => {
+        match self.meta.object_name.to_lowercase().as_str() {
+            "multi" => {
+                write_scalar::<FixedAscii<6>>(
+                    &header,
+                    "phase_type",
+                    &FixedAscii::<6>::from_ascii(&self.meta.phase_type.to_string().to_lowercase())
+                        .expect("Unable to write phase_type"),
+                )?;
+                // handle the catalog
+                write_scalar::<u32>(&header, "Nphase", &self.meta.nphases)?;
+                let cat_group = header.create_group("phase_center_catalog")?;
+                for (name, catval) in self.meta_arrays.phase_center_catalog.iter() {
+                    let dumped_val = FixedAscii::<MAX_HIST_LENGTH>::from_ascii(
+                        &serde_json::to_string(catval)
+                            .expect("Cannot convert catalog value to string."),
+                    )
+                    .expect("Unable to write out catalog values.");
+                    write_scalar(&cat_group, name, &dumped_val)?
+                }
+                header
+                    .new_dataset_builder()
+                    .with_data(&self.meta_arrays.phase_center_id_array)
+                    .create("phase_center_id_array")?;
+            }
+            _ => {
                 match self.meta_arrays.phase_center_catalog.into_iter().next() {
                     Some((_, CatTypes::Unphased(_))) => {
                         write_scalar::<FixedAscii<6>>(
@@ -666,29 +689,6 @@ where
                         return Err(format!("Invalid phase center catalog entry {:?}", other).into())
                     }
                 }
-            }
-            val => {
-                write_scalar::<FixedAscii<6>>(
-                    &header,
-                    "phase_type",
-                    &FixedAscii::<6>::from_ascii(&self.meta.phase_type.to_string().to_lowercase())
-                        .expect("Unable to write phase_type"),
-                )?;
-                // handle the catalog
-                write_scalar::<u32>(&header, "Nphase", &val)?;
-                let cat_group = header.create_group("phase_center_catalog")?;
-                for (name, catval) in self.meta_arrays.phase_center_catalog.iter() {
-                    let dumped_val = FixedAscii::<MAX_HIST_LENGTH>::from_ascii(
-                        &serde_json::to_string(catval)
-                            .expect("Cannot convert catalog value to string."),
-                    )
-                    .expect("Unable to write out catalog values.");
-                    write_scalar(&cat_group, name, &dumped_val)?
-                }
-                header
-                    .new_dataset_builder()
-                    .with_data(&self.meta_arrays.phase_center_id_array)
-                    .create("phase_center_id_array")?;
             }
         };
 
