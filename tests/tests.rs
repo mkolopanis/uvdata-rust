@@ -292,8 +292,8 @@ fn test_roundtrip_files() {
                 .expect(format!("Unable to write {:?}", outpath).as_str());
             let mut uvd2 = UVData::<f64, f32>::read_uvh5(&outpath, true)
                 .expect(format!("Unable to read file {:?}", outpath).as_str());
-            // assert_ne!(uvd1, uvd2);
 
+            // histories are probably the same but let's just make sure.
             uvd2.meta.history = uvd1.meta.history.clone();
 
             assert_eq!(uvd1.meta, uvd2.meta);
