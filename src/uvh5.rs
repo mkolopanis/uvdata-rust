@@ -165,13 +165,23 @@ where
         let nants_data: u32 = read_scalar::<u32>(&header, "Nants_data")?.unwrap();
 
         let nants_telescope: u32 = read_scalar::<u32>(&header, "Nants_telescope")?.unwrap();
-        let nbls: u32 = read_scalar::<u32>(&header, "Nbls")?.unwrap();
+
         let nblts: u32 = read_scalar::<u32>(&header, "Nblts")?.unwrap();
         let nspws: u32 = read_scalar::<u32>(&header, "Nspws")?.unwrap();
         let npols: u8 = read_scalar::<u8>(&header, "Npols")?.unwrap();
         let ntimes: u32 = read_scalar::<u32>(&header, "Ntimes")?.unwrap();
         let nfreqs: u32 = read_scalar::<u32>(&header, "Nfreqs")?.unwrap();
         let nphases: u32 = read_scalar::<u32>(&header, "Nphases")?.unwrap_or(1);
+
+        // compute Nbls
+        let ant_1_array: Array<u32, Ix1> = header.dataset("ant_1_array")?.read::<u32, Ix1>()?;
+        let ant_2_array: Array<u32, Ix1> = header.dataset("ant_2_array")?.read::<u32, Ix1>()?;
+        let baseline_array: Array<u32, Ix1> =
+            utils::antnums_to_baseline(&ant_1_array, &ant_2_array, false);
+        let nbls = baseline_array
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len() as u32;
 
         let meta = UVMeta {
             nbls,
@@ -206,14 +216,11 @@ where
         let uvw_array: Array<f64, Ix2> = header.dataset("uvw_array")?.read::<f64, Ix2>()?;
         let time_array: Array<f64, Ix1> = header.dataset("time_array")?.read::<f64, Ix1>()?;
         let lst_array: Array<f64, Ix1> = header.dataset("lst_array")?.read::<f64, Ix1>()?;
-        let ant_1_array: Array<u32, Ix1> = header.dataset("ant_1_array")?.read::<u32, Ix1>()?;
-        let ant_2_array: Array<u32, Ix1> = header.dataset("ant_2_array")?.read::<u32, Ix1>()?;
+
         let antenna_names: Array<String, Ix1> = header
             .dataset("antenna_names")?
             .read::<FixedAscii<50>, Ix1>()?
             .mapv(|x| x.into());
-        let baseline_array: Array<u32, Ix1> =
-            utils::antnums_to_baseline(&ant_1_array, &ant_2_array, false);
         let freq_dset = header.dataset("freq_array")?;
         let freq_array: Array<f64, Ix1> = match freq_dset.ndim() {
             1 => freq_dset.read::<f64, Ix1>()?,
@@ -388,10 +395,14 @@ where
             nsample_array,
             flag_array,
         };
-        // let uvh5
+
         Ok(uvh5)
     }
     pub fn to_file<P: AsRef<Path>>(self, fname: P, overwrite: bool) -> hdf5::Result<()> {
+        match self.data_array {
+            Some(_) => {}
+            None => return Err("Unable to write metadata only objects to UVH5 files.".into()),
+        }
         let h5file: hdf5::File = match overwrite {
             true => hdf5::File::create(fname)?,
             false => hdf5::File::create_excl(fname)?,
@@ -426,13 +437,6 @@ where
             "vis_units",
             &FixedAscii::<7>::from_ascii(&self.meta.vis_units.to_string().to_lowercase())
                 .expect("Unable to write vis_units"),
-        )?;
-
-        write_scalar::<FixedAscii<6>>(
-            &header,
-            "phase_type",
-            &FixedAscii::<6>::from_ascii(&self.meta.phase_type.to_string().to_lowercase())
-                .expect("Unable to write phase_type"),
         )?;
 
         write_scalar::<FixedAscii<5>>(
@@ -618,8 +622,23 @@ where
         match self.meta.nphases {
             1 => {
                 match self.meta_arrays.phase_center_catalog.into_iter().next() {
-                    Some((_, CatTypes::Unphased(_))) => {}
+                    Some((_, CatTypes::Unphased(_))) => {
+                        write_scalar::<FixedAscii<6>>(
+                            &header,
+                            "phase_type",
+                            &FixedAscii::<6>::from_ascii(&"drift")
+                                .expect("Unable to write phase_type"),
+                        )?;
+                    }
                     Some((_, CatTypes::Sidereal(catalog))) => {
+                        write_scalar::<FixedAscii<6>>(
+                            &header,
+                            "phase_type",
+                            &FixedAscii::<6>::from_ascii(
+                                &self.meta.phase_type.to_string().to_lowercase(),
+                            )
+                            .expect("Unable to write phase_type"),
+                        )?;
                         write_scalar::<FixedAscii<200>>(
                             &header,
                             "phase_center_frame",
@@ -628,7 +647,7 @@ where
                         )
                         .expect("Cannot write out phase_center_frame.");
                         write_scalar(&header, "phase_center_ra", &catalog.cat_lat)?;
-                        write_scalar(&header, "phase_center_lon", &catalog.cat_lon)?;
+                        write_scalar(&header, "phase_center_dec", &catalog.cat_lon)?;
                         write_scalar(&header, "phase_center_epoch", &catalog.cat_epoch)?;
                         // need to calculate some things here, app_ra, app_dec, phase_center_frame_pa
                         // catalog.cat_pm_ra.map(|val|  write_scalar(&header, "phase_center_frame_pa", &catalog.cat_epoch)?)
@@ -649,6 +668,12 @@ where
                 }
             }
             val => {
+                write_scalar::<FixedAscii<6>>(
+                    &header,
+                    "phase_type",
+                    &FixedAscii::<6>::from_ascii(&self.meta.phase_type.to_string().to_lowercase())
+                        .expect("Unable to write phase_type"),
+                )?;
                 // handle the catalog
                 write_scalar::<u32>(&header, "Nphase", &val)?;
                 let cat_group = header.create_group("phase_center_catalog")?;
@@ -670,6 +695,7 @@ where
         let dgroup = h5file.create_group("/Data")?;
 
         let h5_data: Array<Complexh5, Ix3> = self.data_array.unwrap().mapv(|x| x.into());
+
         dgroup
             .new_dataset_builder()
             .with_data(&h5_data)

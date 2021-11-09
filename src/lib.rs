@@ -36,6 +36,8 @@ where
     pub flag_array: Option<Array<bool, Ix3>>,
 }
 
+impl<T: Float, S: Float> Eq for UVData<T, S> {}
+
 impl<T, S> UVData<T, S>
 where
     T: Float,
