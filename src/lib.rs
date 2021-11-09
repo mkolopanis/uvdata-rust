@@ -1,9 +1,9 @@
-#[cfg(test)]
 #[macro_use]
 extern crate approx;
 
+use approx::AbsDiffEq;
 use hdf5::H5Type;
-use ndarray::{Array, Ix3};
+use ndarray::{Array, Dimension, Ix3};
 use num_complex::Complex;
 use num_traits::{
     cast::{AsPrimitive, FromPrimitive},
@@ -23,11 +23,27 @@ pub use self::base::{
 };
 pub use self::utils::{antnums_to_baseline, latlonalt_from_xyz, xyz_from_latlonalt};
 
-#[derive(Debug, PartialEq, Clone)]
+fn compare_complex_arrays<T, U>(
+    array1: &Array<Complex<T>, U>,
+    array2: &Array<Complex<T>, U>,
+) -> bool
+where
+    T: Float + AbsDiffEq + AbsDiffEq<Epsilon = T>,
+    U: Dimension,
+{
+    array1
+        .mapv(|x| x.re)
+        .abs_diff_eq(&array2.mapv(|x| x.re), T::from(1e-6).unwrap())
+        && array1
+            .mapv(|x| x.im)
+            .abs_diff_eq(&array2.mapv(|x| x.im), T::from(1e-6).unwrap())
+}
+
+#[derive(Debug, Clone)]
 pub struct UVData<T, S>
 where
-    T: Float,
-    S: Float,
+    T: Float + AbsDiffEq,
+    S: Float + AbsDiffEq,
 {
     pub meta: UVMeta,
     pub meta_arrays: ArrayMetaData,
@@ -36,12 +52,65 @@ where
     pub flag_array: Option<Array<bool, Ix3>>,
 }
 
-impl<T: Float, S: Float> Eq for UVData<T, S> {}
+impl<T, S> PartialEq for UVData<T, S>
+where
+    T: Float + AbsDiffEq + AbsDiffEq<Epsilon = T>,
+    S: Float + AbsDiffEq + AbsDiffEq<Epsilon = S>,
+{
+    fn eq(&self, other: &UVData<T, S>) -> bool {
+        match self.meta == other.meta {
+            true => {}
+            false => return false,
+        }
+
+        match self.meta_arrays == other.meta_arrays {
+            true => {}
+            false => return false,
+        }
+
+        match &self.data_array {
+            Some(data1) => match &other.data_array {
+                Some(data2) => match compare_complex_arrays(data1, data2) {
+                    true => {}
+                    false => return false,
+                },
+
+                None => return false,
+            },
+            None => match &other.data_array {
+                None => {}
+                Some(_) => return false,
+            },
+        }
+
+        match &self.nsample_array {
+            Some(nsample1) => match &other.nsample_array {
+                Some(nsample2) => match nsample1.abs_diff_eq(nsample2, S::from(1e-6).unwrap()) {
+                    true => {}
+                    false => return false,
+                },
+
+                None => return false,
+            },
+            None => match &other.nsample_array {
+                None => {}
+                Some(_) => return false,
+            },
+        }
+
+        match self.flag_array == other.flag_array {
+            true => {}
+            false => return false,
+        }
+
+        true
+    }
+}
 
 impl<T, S> UVData<T, S>
 where
-    T: Float,
-    S: Float,
+    T: Float + AbsDiffEq,
+    S: Float + AbsDiffEq,
 {
     pub fn new(meta: UVMeta, metadata_only: bool) -> UVData<T, S> {
         let meta_arrays = ArrayMetaData::new(&meta);
@@ -96,8 +165,8 @@ impl From<UVMeta> for UVData<f64, f32> {
 
 impl<T, S> From<(UVMeta, bool)> for UVData<T, S>
 where
-    T: Float,
-    S: Float,
+    T: Float + AbsDiffEq,
+    S: Float + AbsDiffEq,
 {
     fn from((meta, metadata_only): (UVMeta, bool)) -> UVData<T, S> {
         UVData::<T, S>::new(meta, metadata_only)
@@ -106,8 +175,8 @@ where
 
 impl<T, S> From<UVH5<T, S>> for UVData<T, S>
 where
-    T: Float + AsPrimitive<f64> + FromPrimitive + H5Type,
-    S: Float + H5Type,
+    T: Float + AsPrimitive<f64> + FromPrimitive + H5Type + AbsDiffEq,
+    S: Float + H5Type + AbsDiffEq,
 {
     fn from(uvh5: UVH5<T, S>) -> UVData<T, S> {
         UVData {
@@ -122,8 +191,8 @@ where
 
 impl<T, S> From<UVData<T, S>> for UVH5<T, S>
 where
-    T: Float + FromPrimitive + AsPrimitive<f64> + H5Type,
-    S: Float + H5Type,
+    T: Float + FromPrimitive + AsPrimitive<f64> + H5Type + AbsDiffEq,
+    S: Float + H5Type + AbsDiffEq,
 {
     fn from(uvd: UVData<T, S>) -> UVH5<T, S> {
         UVH5 {
@@ -138,8 +207,8 @@ where
 
 impl<T, S> UVData<T, S>
 where
-    T: Float + AsPrimitive<f64> + FromPrimitive + H5Type,
-    S: Float + H5Type,
+    T: Float + AsPrimitive<f64> + FromPrimitive + H5Type + AbsDiffEq,
+    S: Float + H5Type + AbsDiffEq,
 {
     pub fn read_uvh5<P: AsRef<Path>>(path: P, read_data: bool) -> hdf5::Result<UVData<T, S>> {
         Ok(UVData::<T, S>::from(UVH5::<T, S>::from_file::<P>(
@@ -150,5 +219,55 @@ where
     pub fn write_uvh5<P: AsRef<Path>>(self, path: P, overwrite: bool) -> hdf5::Result<()> {
         UVH5::<T, S>::from(self).to_file::<P>(path, overwrite)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::compare_complex_arrays;
+    use ndarray::{array, Array, Ix1};
+    use num_complex::Complex;
+
+    #[test]
+    fn test_complex_eq() {
+        let array1: Array<Complex<f64>, Ix1> = array![
+            Complex::<f64> {
+                re: 1.0f64,
+                im: 2.0f64
+            },
+            Complex::<f64> {
+                re: 3.0f64,
+                im: 4.0f64
+            }
+        ];
+
+        assert!(compare_complex_arrays(&array1, &array1))
+    }
+
+    #[test]
+    fn test_complex_neq() {
+        let array1: Array<Complex<f64>, Ix1> = array![
+            Complex::<f64> {
+                re: 1.0f64,
+                im: 2.0f64
+            },
+            Complex::<f64> {
+                re: 3.0f64,
+                im: 4.0f64
+            }
+        ];
+
+        let array2: Array<Complex<f64>, Ix1> = array![
+            Complex::<f64> {
+                re: 7.0f64,
+                im: 8.0f64
+            },
+            Complex::<f64> {
+                re: 9.0f64,
+                im: 10.0f64
+            }
+        ];
+
+        assert!(!compare_complex_arrays(&array1, &array2))
     }
 }

@@ -1,4 +1,3 @@
-use approx::abs_diff_eq;
 use ndarray::{Array, Ix1, Ix2};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};

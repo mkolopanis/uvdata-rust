@@ -280,6 +280,7 @@ fn test_roundtrip_files() {
     let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data");
     for fname in data_dir.read_dir().expect("No data found") {
         if let Ok(fname) = fname {
+            println!("filename {:?}", fname);
             let uvd = UVData::<f64, f32>::read_uvh5(fname.path(), true)
                 .expect(format!("Unable to read file {:?}", fname).as_str());
             let uvd1 = uvd.clone();
@@ -291,9 +292,15 @@ fn test_roundtrip_files() {
                 .expect(format!("Unable to write {:?}", outpath).as_str());
             let mut uvd2 = UVData::<f64, f32>::read_uvh5(&outpath, true)
                 .expect(format!("Unable to read file {:?}", outpath).as_str());
-            assert_ne!(uvd1, uvd2);
+            // assert_ne!(uvd1, uvd2);
+
             uvd2.meta.history = uvd1.meta.history.clone();
-            assert_eq!(uvd1, uvd1);
+
+            assert_eq!(uvd1.meta, uvd2.meta);
+
+            assert_eq!(uvd1.meta_arrays, uvd2.meta_arrays);
+
+            assert_eq!(uvd1, uvd2);
         }
     }
 }
