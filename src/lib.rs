@@ -3,7 +3,7 @@ extern crate approx;
 
 use approx::AbsDiffEq;
 use hdf5::H5Type;
-use ndarray::{Array, Dimension, Ix3};
+use ndarray::{Array, Dimension, Ix1, Ix2, Ix3};
 use num_complex::Complex;
 use num_traits::{
     cast::{AsPrimitive, FromPrimitive},
@@ -157,6 +157,17 @@ where
     pub fn telescope_location_latlonalt_degrees(&self) -> (f64, f64, f64) {
         let lla: (f64, f64, f64) = utils::latlonalt_from_xyz(self.meta.telescope_location);
         (lla.0.to_degrees(), lla.1.to_degrees(), lla.2)
+    }
+
+    pub fn get_enu_antpos(&self) -> Array<f64, Ix2> {
+        let lla = self.telescope_location_latlonalt_degrees();
+        enu_from_ecef(
+            &(self.meta_arrays.antenna_positions.clone()
+                + Array::<f64, Ix1>::from_vec(self.meta.telescope_location.into())),
+            lla.0,
+            lla.1,
+            lla.2,
+        )
     }
 }
 
