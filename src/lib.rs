@@ -22,7 +22,8 @@ pub use self::base::{
     SiderealVal, UVMeta, UnphasedVal, VisUnit,
 };
 pub use self::utils::{
-    antnums_to_baseline, baseline_to_antnums, latlonalt_from_xyz, xyz_from_latlonalt,
+    antnums_to_baseline, baseline_to_antnums, ecef_from_enu, enu_from_ecef, latlonalt_from_xyz,
+    xyz_from_latlonalt,
 };
 
 fn compare_complex_arrays<T, U>(
