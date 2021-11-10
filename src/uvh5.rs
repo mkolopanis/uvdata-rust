@@ -310,8 +310,8 @@ where
                             CatTypes::Sidereal(SiderealVal {
                                 cat_id: 0,
                                 cat_type: "sidereal".to_string(),
-                                cat_lat: read_scalar::<f64>(&header, "phase_center_ra")?.unwrap(),
-                                cat_lon: read_scalar::<f64>(&header, "phase_center_dec")?.unwrap(),
+                                cat_lon: read_scalar::<f64>(&header, "phase_center_ra")?.unwrap(),
+                                cat_lat: read_scalar::<f64>(&header, "phase_center_dec")?.unwrap(),
                                 cat_frame,
                                 cat_epoch: read_scalar::<f64>(&header, "phase_center_epoch")?
                                     .unwrap(),
@@ -669,8 +669,8 @@ where
                                 .expect("Cannot convert phase type to ascii."),
                         )
                         .expect("Cannot write out phase_center_frame.");
-                        write_scalar(&header, "phase_center_ra", &catalog.cat_lat)?;
-                        write_scalar(&header, "phase_center_dec", &catalog.cat_lon)?;
+                        write_scalar(&header, "phase_center_ra", &catalog.cat_lon)?;
+                        write_scalar(&header, "phase_center_dec", &catalog.cat_lat)?;
                         write_scalar(&header, "phase_center_epoch", &catalog.cat_epoch)?;
                         // need to calculate some things here, app_ra, app_dec, phase_center_frame_pa
                         // catalog.cat_pm_ra.map(|val|  write_scalar(&header, "phase_center_frame_pa", &catalog.cat_epoch)?)
