@@ -709,11 +709,6 @@ impl PartialEq<ArrayMetaData> for ArrayMetaData {
             true => {}
             false => return false,
         }
-
-        match self.spw_array == other.spw_array {
-            true => {}
-            false => return false,
-        }
         match self.uvw_array.abs_diff_eq(&other.uvw_array, 1e-6) {
             true => {}
             false => return false,
