@@ -161,7 +161,7 @@ mod test {
         antnums_to_baseline, baseline_to_antnums, ecef_from_enu, enu_from_ecef, latlonalt_from_xyz,
         xyz_from_latlonalt,
     };
-    use ndarray::{array, stack, Axis};
+    use ndarray::{array, stack, Array, Axis};
 
     #[test]
     fn xyz_from_lla() {
@@ -295,10 +295,9 @@ mod test {
 
         let mut xyz = stack![Axis(0), lats, lons, alts].reversed_axes();
         for mut _xyz in xyz.outer_iter_mut() {
-            let new_xyz: [f64; 3] = xyz_from_latlonalt(_xyz[0], _xyz[1], _xyz[2]);
-            _xyz[0] = new_xyz[0];
-            _xyz[1] = new_xyz[1];
-            _xyz[2] = new_xyz[2];
+            _xyz.assign(&Array::from_vec(
+                xyz_from_latlonalt(_xyz[0], _xyz[1], _xyz[2]).to_vec(),
+            ));
         }
         let enu = enu_from_ecef(&xyz, center_lat, center_lon, center_alt);
         let enu_ref = stack![Axis(0), east, north, up].reversed_axes();
