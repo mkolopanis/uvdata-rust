@@ -66,7 +66,9 @@ jobs:
         run: |
           conda install -yq hdf5
           echo  "HDF5_DIR=$CONDA_PREFIX" >> $GITHUB_ENV
-          [ "${{runner.os}}" != "Windows" ] && echo "RUSTFLAGS=-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib" >> $GITHUB_ENV
+          if [ "${{runner.os}}" != "Windows" ]; then
+              echo "RUSTFLAGS=-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib" >> $GITHUB_ENV
+          fi
 
       - name: Build
         run: |
