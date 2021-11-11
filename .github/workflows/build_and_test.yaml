@@ -70,10 +70,18 @@ jobs:
               echo "RUSTFLAGS=-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib" >> $GITHUB_ENV
           fi
 
-      - name: Build
+      - name: Build  & Test
         run: |
-          cargo build --tests
+          if [ ${{runner.os}} == "Linux" ]; then
+              cargo install cargo-tarpaulin
+              cargo tarpaulin -o Xml --all-features --tests
+          else
+              cargo test -v
+          fi
 
-      - name: Test
-        run: |
-          cargo test -v
+      - name: Upload to codecov.io
+        if: success() && runner.os == 'Linux'
+        uses: codecov/codecov-action@v2.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}} # not required for public repos
+          fail_ci_if_error: true
