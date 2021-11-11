@@ -61,16 +61,17 @@ jobs:
           miniconda-version: "latest"
           auto-activate-base: true
           activate-environment: ""
+
       - name: Install HDF5
         run: |
           conda install -yq hdf5
+          echo  "HDF5_DIR='$CONDA_PREFIX'" >> $GITHUB_ENV
+          [ "${{runner.os}}" != "Windows" ] && echo "RUSTFLAGS='-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib'" >> $GITHUB_ENV
+
       - name: Build
         run: |
-          export HDF5_DIR="$CONDA_PREFIX"
-          [ "${{runner.os}}" != "Windows" ] && export RUSTFLAGS="-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib"
           cargo build --tests
+
       - name: Test
         run: |
-          export HDF5_DIR="$CONDA_PREFIX"
-          [ "${{runner.os}}" != "Windows" ] && export RUSTFLAGS="-C link-args=-Wl,-rpath,$CONDA_PREFIX/lib"
           cargo test -v
