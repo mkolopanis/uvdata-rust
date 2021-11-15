@@ -64,7 +64,7 @@ pub fn antnums_to_baseline<T: PrimInt + FromPrimitive>(
                 *bl = T::from_u32(256u32).unwrap()
                     * (a1 + one)
                     + (a2 + one)
-            })
+            });
         }
         false => {
             let two: T = T::one() + T::one();
@@ -73,7 +73,7 @@ pub fn antnums_to_baseline<T: PrimInt + FromPrimitive>(
                     * (a1 + one)
                     + (a2 + one)
                     + two.pow(16)
-            })
+            });
         }
     };
     baselines
