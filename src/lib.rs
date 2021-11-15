@@ -3,7 +3,7 @@ extern crate approx;
 
 use approx::AbsDiffEq;
 use hdf5::H5Type;
-use ndarray::{Array, Dimension, Ix1, Ix2, Ix3};
+use ndarray::{Array, Dimension, Ix3};
 use num_complex::Complex;
 use num_traits::{
     cast::{AsPrimitive, FromPrimitive},
@@ -31,7 +31,7 @@ fn compare_complex_arrays<T, U>(
     array2: &Array<Complex<T>, U>,
 ) -> bool
 where
-    T: Float + AbsDiffEq + AbsDiffEq<Epsilon = T>,
+    T: Float + AbsDiffEq + AbsDiffEq<T> + AbsDiffEq<Epsilon = T>,
     U: Dimension,
 {
     array1
@@ -57,8 +57,8 @@ where
 
 impl<T, S> PartialEq for UVData<T, S>
 where
-    T: Float + AbsDiffEq + AbsDiffEq<Epsilon = T>,
-    S: Float + AbsDiffEq + AbsDiffEq<Epsilon = S>,
+    T: Float + AbsDiffEq + AbsDiffEq<T> + AbsDiffEq<Epsilon = T>,
+    S: Float + AbsDiffEq + AbsDiffEq<S> + AbsDiffEq<Epsilon = S>,
 {
     fn eq(&self, other: &UVData<T, S>) -> bool {
         match self.meta == other.meta {
@@ -157,17 +157,6 @@ where
     pub fn telescope_location_latlonalt_degrees(&self) -> (f64, f64, f64) {
         let lla: (f64, f64, f64) = utils::latlonalt_from_xyz(self.meta.telescope_location);
         (lla.0.to_degrees(), lla.1.to_degrees(), lla.2)
-    }
-
-    pub fn get_enu_antpos(&self) -> Array<f64, Ix2> {
-        let lla = self.telescope_location_latlonalt_degrees();
-        enu_from_ecef(
-            &(self.meta_arrays.antenna_positions.clone()
-                + Array::<f64, Ix1>::from_vec(self.meta.telescope_location.into())),
-            lla.0,
-            lla.1,
-            lla.2,
-        )
     }
 }
 
