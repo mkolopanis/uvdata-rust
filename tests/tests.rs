@@ -284,8 +284,6 @@ fn test_roundtrip_files() {
     let files = fs::read_dir(data_dir).expect("No data.");
     files
         .filter_map(Result::ok)
-        // .take_while(|f| f.is_ok())
-        // .filter_map(|f| f.ok())
         .filter(|fname| fname.path().extension().unwrap() == "uvh5")
         .for_each(|fname| {
             println!("filename {:?}", fname);
