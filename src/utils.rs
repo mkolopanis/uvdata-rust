@@ -1,4 +1,4 @@
-use ndarray::{azip, Array, Ix1, Ix2};
+use ndarray::{array, azip, Array, Ix1, Ix2};
 use num_traits::{cast::FromPrimitive, Float, PrimInt};
 
 const GPS_A: f64 = 6378137f64;
@@ -154,13 +154,46 @@ where
     ecef
 }
 
+pub fn rot_ecef_from_ecef<T>(ecef: Array<T, Ix2>, latitude: T) -> Array<T, Ix2>
+where
+    T: Float + FromPrimitive + 'static,
+{
+    let zero = T::zero();
+    let one = T::one();
+    let neg_one: T = T::from(-1.0).unwrap();
+    let angle: T = (neg_one * latitude).to_radians();
+
+    let rot_mat: Array<T, Ix2> = array![
+        [angle.cos(), neg_one * angle.sin(), zero],
+        [angle.sin(), angle.cos(), zero],
+        [zero, zero, one],
+    ];
+
+    ecef.dot(&rot_mat.t()).to_owned()
+}
+
+pub fn ecef_from_rot_ecef<T>(rotecef: Array<T, Ix2>, latitude: T) -> Array<T, Ix2>
+where
+    T: Float + FromPrimitive + 'static,
+{
+    let zero = T::zero();
+    let one = T::one();
+    let neg_one: T = T::from(-1.0).unwrap();
+    let angle: T = (latitude).to_radians();
+
+    let rot_mat: Array<T, Ix2> = array![
+        [angle.cos(), neg_one * angle.sin(), zero],
+        [angle.sin(), angle.cos(), zero],
+        [zero, zero, one],
+    ];
+
+    rotecef.dot(&rot_mat.t()).to_owned()
+}
+
 #[cfg(test)]
 mod test {
 
-    use super::{
-        antnums_to_baseline, baseline_to_antnums, ecef_from_enu, enu_from_ecef, latlonalt_from_xyz,
-        xyz_from_latlonalt,
-    };
+    use super::*;
     use ndarray::{array, stack, Array, Axis};
 
     #[test]
@@ -389,5 +422,13 @@ mod test {
         let ref_xyz = stack![Axis(0), x, y, z].reversed_axes();
 
         assert!(xyz.abs_diff_eq(&ref_xyz, 1e-6))
+    }
+
+    #[test]
+    fn ecef_rotation_identity() {
+        let lat = -30.72152612068925f64;
+        let ecef: Array<f64, Ix2> = Array::linspace(1.0, 7.0, 6).into_shape((2, 3)).unwrap();
+        let ecef2 = ecef_from_rot_ecef(rot_ecef_from_ecef(ecef.clone(), lat), lat);
+        assert!(ecef.abs_diff_eq(&ecef2, 10f64 * f64::EPSILON))
     }
 }
