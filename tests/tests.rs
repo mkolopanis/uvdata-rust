@@ -4,7 +4,7 @@ extern crate approx;
 
 use ndarray::Array3;
 use num_complex::Complex;
-use std::path::Path;
+use std::{fs, path::Path};
 use tempdir::TempDir;
 use uvdata::*;
 
@@ -264,22 +264,30 @@ fn init_metadata_true() {
 #[test]
 fn test_read_files() {
     let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data");
-    for fname in data_dir.read_dir().expect("No data found") {
-        if let Ok(fname) = fname {
+    data_dir
+        .read_dir()
+        .expect("No data found")
+        .filter_map(Result::ok)
+        .filter(|fname| fname.path().extension().unwrap() == "uvh5")
+        .for_each(|fname| {
             match UVData::<f64, f32>::read_uvh5(fname.path(), true) {
                 Ok(_) => assert!(true),
                 Err(_) => assert!(false),
             };
-        }
-    }
+        })
 }
 
 #[test]
 fn test_roundtrip_files() {
     let outdir = TempDir::new("roundtrip_test").expect("Unable to create temporary test directory");
     let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data");
-    for fname in data_dir.read_dir().expect("No data found") {
-        if let Ok(fname) = fname {
+    let files = fs::read_dir(data_dir).expect("No data.");
+    files
+        .filter_map(Result::ok)
+        // .take_while(|f| f.is_ok())
+        // .filter_map(|f| f.ok())
+        .filter(|fname| fname.path().extension().unwrap() == "uvh5")
+        .for_each(|fname| {
             println!("filename {:?}", fname);
             let uvd = UVData::<f64, f32>::read_uvh5(fname.path(), true)
                 .expect(format!("Unable to read file {:?}", fname).as_str());
@@ -301,8 +309,7 @@ fn test_roundtrip_files() {
             assert_eq!(uvd1.meta_arrays, uvd2.meta_arrays);
 
             assert_eq!(uvd1, uvd2);
-        }
-    }
+        })
 }
 
 #[test]
