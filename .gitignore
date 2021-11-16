@@ -1,2 +1,8 @@
 /target
 Cargo.lock
+
+# coverage related outputs
+tarpaulin-report.html
+cobertura.xml
+lcov.info
+tarpaulin-report.json
