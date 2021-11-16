@@ -154,14 +154,14 @@ where
     ecef
 }
 
-pub fn rot_ecef_from_ecef<T>(ecef: Array<T, Ix2>, latitude: T) -> Array<T, Ix2>
+pub fn rot_ecef_from_ecef<T>(ecef: Array<T, Ix2>, longitude: T) -> Array<T, Ix2>
 where
     T: Float + FromPrimitive + 'static,
 {
     let zero = T::zero();
     let one = T::one();
     let neg_one: T = T::from(-1.0).unwrap();
-    let angle: T = (neg_one * latitude).to_radians();
+    let angle: T = (neg_one * longitude).to_radians();
 
     let rot_mat: Array<T, Ix2> = array![
         [angle.cos(), neg_one * angle.sin(), zero],
@@ -172,14 +172,14 @@ where
     ecef.dot(&rot_mat.t()).to_owned()
 }
 
-pub fn ecef_from_rot_ecef<T>(rotecef: Array<T, Ix2>, latitude: T) -> Array<T, Ix2>
+pub fn ecef_from_rot_ecef<T>(rotecef: Array<T, Ix2>, longitude: T) -> Array<T, Ix2>
 where
     T: Float + FromPrimitive + 'static,
 {
     let zero = T::zero();
     let one = T::one();
     let neg_one: T = T::from(-1.0).unwrap();
-    let angle: T = (latitude).to_radians();
+    let angle: T = (longitude).to_radians();
 
     let rot_mat: Array<T, Ix2> = array![
         [angle.cos(), neg_one * angle.sin(), zero],
@@ -195,6 +195,7 @@ mod test {
 
     use super::*;
     use ndarray::{array, stack, Array, Axis};
+    use std::{convert::TryInto, path::Path};
 
     #[test]
     fn xyz_from_lla() {
@@ -426,9 +427,41 @@ mod test {
 
     #[test]
     fn ecef_rotation_identity() {
-        let lat = -30.72152612068925f64;
+        let lat = 21.42830382686301f64;
         let ecef: Array<f64, Ix2> = Array::linspace(1.0, 7.0, 6).into_shape((2, 3)).unwrap();
         let ecef2 = ecef_from_rot_ecef(rot_ecef_from_ecef(ecef.clone(), lat), lat);
         assert!(ecef.abs_diff_eq(&ecef2, 10f64 * f64::EPSILON))
+    }
+
+    #[test]
+    fn ecef_compare_mwa() {
+        let data_file = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/mwa128_layouts.h5");
+        let h5file = hdf5::File::open(data_file).expect("MWA 128 Layout file missing.");
+        let rot_ecef = h5file
+            .dataset("rot_ecef")
+            .expect("No rot_ecef dataset")
+            .read::<f64, Ix2>()
+            .expect("Could not read dataset.");
+        let arrcent = h5file
+            .dataset("arrcent")
+            .expect("No arrcet dataset")
+            .read::<f64, Ix1>()
+            .expect("Could not read dataset.");
+        let enh = h5file
+            .dataset("enh")
+            .expect("No enh dataset")
+            .read::<f64, Ix2>()
+            .expect("Could not read dataset.");
+
+        let (lat, lon, alt) = latlonalt_from_xyz(arrcent.to_vec().try_into().unwrap());
+
+        let new_xyz = ecef_from_rot_ecef(rot_ecef.clone(), lon.to_degrees());
+        let ecef_xyz = new_xyz.clone() + arrcent;
+        let enu = enu_from_ecef(&ecef_xyz, lat.to_degrees(), lon.to_degrees(), alt);
+
+        assert!(enu.abs_diff_eq(&enh, 1e-6));
+        let new_rot_ecef = rot_ecef_from_ecef(new_xyz, lon.to_degrees());
+
+        assert!(new_rot_ecef.abs_diff_eq(&rot_ecef, 1e-6))
     }
 }
