@@ -159,11 +159,14 @@ where
         (lla.0.to_degrees(), lla.1.to_degrees(), lla.2)
     }
 
-    pub fn get_enu_antpos(&self) -> Array<f64, Ix2> {
+    pub fn get_enu_antpos(&self) -> (Array<f64, Ix2>, Array<u32, Ix1>) {
         let (lat, lon, alt) = self.telescope_location_latlonalt_degrees();
         let tele_loc: Array<f64, Ix1> = Array::from_vec(self.meta.telescope_location.to_vec());
         let xyz: Array<f64, Ix2> = self.meta_arrays.antenna_positions.clone() + tele_loc;
-        enu_from_ecef(&xyz, lat, lon, alt)
+        (
+            enu_from_ecef(&xyz, lat, lon, alt),
+            self.meta_arrays.antenna_numbers.clone(),
+        )
     }
 }
 
@@ -298,7 +301,7 @@ mod test {
         let data_file =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/test_multiphase.uvh5");
         let uvd = UVData::<f64, f32>::read_uvh5(data_file, false).expect("Cannot read.");
-        let enu = uvd.get_enu_antpos();
+        let enu = uvd.get_enu_antpos().0;
         assert!(enu.abs_diff_eq(&ref_antpos, 1e-6))
     }
 }
