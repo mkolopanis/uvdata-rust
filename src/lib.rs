@@ -3,7 +3,7 @@ extern crate approx;
 
 use approx::AbsDiffEq;
 use hdf5::H5Type;
-use ndarray::{Array, Dimension, Ix3};
+use ndarray::{Array, Dimension, Ix1, Ix2, Ix3};
 use num_complex::Complex;
 use num_traits::{
     cast::{AsPrimitive, FromPrimitive},
@@ -158,6 +158,13 @@ where
         let lla: (f64, f64, f64) = utils::latlonalt_from_xyz(self.meta.telescope_location);
         (lla.0.to_degrees(), lla.1.to_degrees(), lla.2)
     }
+
+    pub fn get_enu_antpos(&self) -> Array<f64, Ix2> {
+        let (lat, lon, alt) = self.telescope_location_latlonalt_degrees();
+        let tele_loc: Array<f64, Ix1> = Array::from_vec(self.meta.telescope_location.to_vec());
+        let xyz: Array<f64, Ix2> = self.meta_arrays.antenna_positions.clone() + tele_loc;
+        enu_from_ecef(&xyz, lat, lon, alt)
+    }
 }
 
 impl From<UVMeta> for UVData<f64, f32> {
@@ -227,9 +234,10 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::compare_complex_arrays;
-    use ndarray::{array, Array, Ix1};
+    use super::{compare_complex_arrays, UVData};
+    use ndarray::{array, Array, Ix1, Ix2};
     use num_complex::Complex;
+    use std::path::Path;
 
     #[test]
     fn test_complex_eq() {
@@ -272,5 +280,25 @@ mod test {
         ];
 
         assert!(!compare_complex_arrays(&array1, &array2))
+    }
+
+    #[test]
+    fn enu_antpos() {
+        let ref_antpos: Array<f64, Ix2> = array![
+            [-105.03530155, -110.72205287, 0.9381712],
+            [-90.42745888, -110.66626434, 0.92839577],
+            [-75.81961648, -110.61047581, 0.91858693],
+            [-112.38751909, -98.10314446, 0.78825341],
+            [-97.77967573, -98.04735522, 0.71849469],
+            [-83.17183304, -97.99156613, 0.65870255],
+            [-68.56399298, -97.93578013, 0.79887699],
+            [-119.73977458, -85.47423123, 0.64830222],
+            [-105.13193283, -85.41844352, 0.66856021]
+        ];
+        let data_file =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/test_multiphase.uvh5");
+        let uvd = UVData::<f64, f32>::read_uvh5(data_file, false).expect("Cannot read.");
+        let enu = uvd.get_enu_antpos();
+        assert!(enu.abs_diff_eq(&ref_antpos, 1e-6))
     }
 }
