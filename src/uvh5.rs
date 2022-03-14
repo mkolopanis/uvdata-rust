@@ -99,14 +99,14 @@ where
 
         // append the version string if it is not already there.
         if !history
-            .replace(" ", "")
-            .replace("\n", "")
-            .contains(&print_version_str().replace(" ", "").replace("\n", ""))
+            .replace(' ', "")
+            .replace('\n', "")
+            .contains(&print_version_str().replace(' ', "").replace('\n', ""))
         {
             history.push_str(&print_version_str());
         }
 
-        let vis_units: VisUnit = match header.link_exists(&"vis_units".to_string()) {
+        let vis_units: VisUnit = match header.link_exists("vis_units") {
             true => VisUnit::from_str(
                 &header
                     .dataset("vis_units")?
@@ -136,15 +136,14 @@ where
         )?;
 
         let antenna_diameters: Option<Array<f32, Ix1>> =
-            match header.link_exists(&"antenna_diameters".to_string()) {
+            match header.link_exists("antenna_diameters") {
                 true => Some(header.dataset("antenna_diameters")?.read::<f32, Ix1>()?),
                 false => None,
             };
         let uvplane_reference_time: Option<i32> =
             read_scalar::<i32>(&header, "uvplane_reference_time")?;
 
-        let eq_coeffs: Option<Array<f32, Ix2>> = match header.link_exists(&"eq_coeffs".to_string())
-        {
+        let eq_coeffs: Option<Array<f32, Ix2>> = match header.link_exists("eq_coeffs") {
             true => Some(header.dataset("eq_coeffs")?.read::<f32, Ix2>()?),
             false => None,
         };
@@ -233,11 +232,10 @@ where
             ndim => return Err(format!("Incompatible dimensions of freq array: {:}", ndim).into()),
         };
 
-        let spw_id_array: Array<u32, Ix1> =
-            match header.link_exists(&"flex_spw_id_array".to_string()) {
-                true => header.dataset("flex_spw_id_array")?.read::<u32, Ix1>()?,
-                false => Array::<u32, Ix1>::zeros(meta.nfreqs as usize),
-            };
+        let spw_id_array: Array<u32, Ix1> = match header.link_exists("flex_spw_id_array") {
+            true => header.dataset("flex_spw_id_array")?.read::<u32, Ix1>()?,
+            false => Array::<u32, Ix1>::zeros(meta.nfreqs as usize),
+        };
         let polarization_array: Array<i8, Ix1> =
             header.dataset("polarization_array")?.read::<i8, Ix1>()?;
         let integration_time: Array<f64, Ix1> =
@@ -526,9 +524,9 @@ where
         let mut hist_out = self.meta.history.clone();
         // append the version string if it is not already there.
         if !hist_out
-            .replace(" ", "")
-            .replace("\n", "")
-            .contains(&print_version_str().replace(" ", "").replace("\n", ""))
+            .replace(' ', "")
+            .replace('\n', "")
+            .contains(&print_version_str().replace(' ', "").replace('\n', ""))
         {
             hist_out.push_str(&print_version_str());
         }
