@@ -14,7 +14,7 @@ bench = false
 approx = "0.4"
 num-complex = "0.4"
 num-traits = "^0.2"
-ndarray = { version = "0.15.3", features = ["approx", "serde"]}
+ndarray = { version = "0.16.1", features = ["approx", "serde"]}
 hdf5 = { version = "0.8", features = ["lzf"]}
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
